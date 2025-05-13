@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getFormattedDate } from "@/lib/utils";
+import { useRef, useEffect, useState } from "react";
 
 import {
   Form,
@@ -50,6 +51,7 @@ const formSchema = z.object({
   reason: z.string().min(5, "Die Begründung muss mindestens 5 Zeichen enthalten"),
   location: z.string().min(1, "Ort ist erforderlich"),
   date: z.string().min(1, "Datum ist erforderlich"),
+  signature: z.string().optional(),
   isLegal: z.boolean().optional(),
   confirmTruth: z.boolean().refine(val => val === true, {
     message: "Sie müssen bestätigen, dass alle Angaben wahrheitsgemäß sind",
@@ -68,6 +70,10 @@ export function AbsenceForm() {
     select: (data) => getDropdownOptions(data),
   });
 
+  // Signatur Canvas ref
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -84,6 +90,7 @@ export function AbsenceForm() {
       reason: "",
       location: "",
       date: getFormattedDate(new Date()),
+      signature: "",
       isLegal: false,
       confirmTruth: false,
     },
@@ -208,33 +215,33 @@ export function AbsenceForm() {
               )}
             />
             
-            <div className="flex space-x-4">
-              <FormField
-                control={form.control}
-                name="profession"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormLabel>Beruf</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Beruf auswählen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dropdowns.professions.map((item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="profession"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Beruf</FormLabel>
+                  <FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Beruf auswählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dropdowns.professions.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
               
-              <div className="flex space-x-4 items-end">
+            <div className="flex items-center space-x-4">
+              <div className="flex space-x-4 items-center">
                 <FormField
                   control={form.control}
                   name="educationType"
@@ -270,36 +277,38 @@ export function AbsenceForm() {
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="studentClass"
-                  render={({ field }) => (
-                    <FormItem className="w-24">
-                      <FormLabel>Klasse:</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Klasse" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
             </div>
             
-            <FormField
-              control={form.control}
-              name="phonePrivate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefon P</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Private Telefonnummer" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="studentClass"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Klasse:</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Klasse" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phonePrivate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefon P</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Private Telefonnummer" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <FormField
               control={form.control}

@@ -31,25 +31,26 @@ import { getDropdownOptions } from "@/lib/dropdowns";
 
 // Extend the form schema with validation
 const formSchema = z.object({
+  firstName: z.string().min(1, "Vorname ist erforderlich"),
+  lastName: z.string().min(1, "Name ist erforderlich"),
   studentClass: z.string({
     required_error: "Bitte Klasse auswählen",
   }),
   profession: z.string({
     required_error: "Bitte Beruf auswählen",
   }),
-  teacherName: z.string({
-    required_error: "Bitte Lehrer auswählen",
+  phonePrivate: z.string().optional(),
+  phoneWork: z.string().optional(),
+  educationType: z.enum(["BS", "BM"]).optional(),
+  teachers: z.array(z.string()).min(1, "Mindestens ein Lehrer muss ausgewählt werden"),
+  absenceDate: z.string({
+    required_error: "Bitte Absenzdatum angeben",
   }),
-  absenceType: z.string({
-    required_error: "Bitte Abwesenheitstyp auswählen",
-  }),
-  dateStart: z.string({
-    required_error: "Bitte Startdatum angeben",
-  }),
-  dateEnd: z.string({
-    required_error: "Bitte Enddatum angeben",
-  }),
+  lessonCount: z.string().min(1, "Anzahl der Lektionen ist erforderlich"),
   reason: z.string().min(5, "Die Begründung muss mindestens 5 Zeichen enthalten"),
+  location: z.string().min(1, "Ort ist erforderlich"),
+  date: z.string().min(1, "Datum ist erforderlich"),
+  isLegal: z.boolean().optional(),
   confirmTruth: z.boolean().refine(val => val === true, {
     message: "Sie müssen bestätigen, dass alle Angaben wahrheitsgemäß sind",
   }),
@@ -70,13 +71,20 @@ export function AbsenceForm() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      firstName: "",
+      lastName: "",
       studentClass: "",
       profession: "",
-      teacherName: "",
-      absenceType: "",
-      dateStart: "",
-      dateEnd: "",
+      phonePrivate: "",
+      phoneWork: "",
+      educationType: undefined,
+      teachers: [],
+      absenceDate: "",
+      lessonCount: "",
       reason: "",
+      location: "",
+      date: getFormattedDate(new Date()),
+      isLegal: false,
       confirmTruth: false,
     },
   });
@@ -87,14 +95,20 @@ export function AbsenceForm() {
       const absenceData = {
         studentId: user?.id!,
         studentName: user?.name!,
+        fullName: `${formData.lastName} ${formData.firstName}`,
         studentClass: formData.studentClass,
         profession: formData.profession,
-        teacherId: 0, // This would need to be fetched based on teacher name
-        teacherName: formData.teacherName,
-        absenceType: formData.absenceType,
-        dateStart: formData.dateStart,
-        dateEnd: formData.dateEnd,
+        phonePrivate: formData.phonePrivate || "",
+        phoneWork: formData.phoneWork || "",
+        educationType: formData.educationType || "BS",
+        teacherIds: [], // Dies müsste basierend auf Lehrer-IDs aktualisiert werden
+        teacherNames: formData.teachers,
+        absenceDate: formData.absenceDate,
+        lessonCount: formData.lessonCount,
         reason: formData.reason,
+        location: formData.location,
+        date: formData.date,
+        isLegal: formData.isLegal || false,
         submissionDate: getFormattedDate(new Date()),
       };
 
@@ -123,13 +137,20 @@ export function AbsenceForm() {
     
     // Reset the form immediately on submission
     form.reset({
+      firstName: "",
+      lastName: "",
       studentClass: "",
       profession: "",
-      teacherName: "",
-      absenceType: "",
-      dateStart: "",
-      dateEnd: "",
+      phonePrivate: "",
+      phoneWork: "",
+      educationType: undefined,
+      teachers: [],
+      absenceDate: "",
+      lessonCount: "",
       reason: "",
+      location: "",
+      date: getFormattedDate(new Date()),
+      isLegal: false,
       confirmTruth: false,
     });
   }
@@ -140,27 +161,52 @@ export function AbsenceForm() {
 
   return (
     <Card className="bg-white shadow-md rounded-lg p-6 max-w-4xl mx-auto">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-primary">Entschuldigung</h1>
-        <p className="text-sm text-gray-600 mt-2">
-          Schulversäumnisse sind innert 8, spätestens jedoch innert 14 Tagen bei den betreffenden
-          Klassenlehrpersonen zu entschuldigen. Diese Entschuldigung ist ohne die erforderlichen
-          Unterschriften ungültig.
-        </p>
+      <div className="flex justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Entschuldigung</h1>
+          <p className="text-sm text-gray-600 mt-2 max-w-2xl">
+            Schulversäumnisse sind innert 8, spätestens jedoch innert 14 Tagen bei den betreffenden
+            Klassenlehrpersonen zu entschuldigen. Diese Entschuldigung ist ohne die erforderlichen
+            Unterschriften ungültig.
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-4xl font-bold">BBB</div>
+          <div className="text-sm">Berufsfachschule</div>
+        </div>
       </div>
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Persönliche Informationen */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="col-span-2 border-b border-gray-200 pb-4 mb-2">
-              <h2 className="text-lg font-semibold mb-4">Persönliche Informationen</h2>
-            </div>
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nachname" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
-            <div>
-              <p className="text-sm mb-1 font-medium text-gray-700">Name:</p>
-              <p className="px-2 py-1 bg-gray-50 rounded border border-gray-200">{user?.name}</p>
-            </div>
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vorname</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Vorname" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <div className="flex space-x-4">
               <FormField
@@ -168,42 +214,193 @@ export function AbsenceForm() {
                 name="profession"
                 render={({ field }) => (
                   <FormItem className="flex-1">
-                    <div className="flex items-center">
-                      <FormLabel className="mr-2">Beruf</FormLabel>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Beruf auswählen" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {dropdowns.professions.map((item) => (
-                              <SelectItem key={item} value={item}>
-                                {item}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                    </div>
+                    <FormLabel>Beruf</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Beruf auswählen" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dropdowns.professions.map((item) => (
+                            <SelectItem key={item} value={item}>
+                              {item}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
+              <div className="flex space-x-4 items-end">
+                <FormField
+                  control={form.control}
+                  name="educationType"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === "BS"}
+                          onCheckedChange={(checked) => {
+                            if (checked) field.onChange("BS");
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel>BS</FormLabel>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="educationType"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === "BM"}
+                          onCheckedChange={(checked) => {
+                            if (checked) field.onChange("BM");
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel>BM</FormLabel>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="studentClass"
+                  render={({ field }) => (
+                    <FormItem className="w-24">
+                      <FormLabel>Klasse:</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Klasse" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="phonePrivate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefon P</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Private Telefonnummer" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="phoneWork"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefon G</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Geschäftliche Telefonnummer" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          {/* Grund der Abwesenheit */}
+          <div className="border-t border-b border-gray-200 py-4">
+            <FormField
+              control={form.control}
+              name="reason"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Grund</FormLabel>
+                  <FormControl>
+                    <Textarea rows={4} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          {/* Unterschriften */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ort/Datum</FormLabel>
+                  <FormControl>
+                    <Input placeholder="z.B. Basel, 14.05.2025" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="flex flex-col">
+              <FormLabel className="mb-2">Unterschriften</FormLabel>
+              <div className="grid grid-cols-1 gap-2">
+                <div className="flex justify-between">
+                  <span>Lernende:r</span>
+                  <FormField
+                    control={form.control}
+                    name="isLegal"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel>mündig</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div>Eltern</div>
+                <div>Ausbildungsverantwortliche:r</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Versäumter Unterricht */}
+          <div className="border-t border-gray-200 pt-4">
+            <h2 className="text-lg font-semibold mb-4">Ich habe folgenden Unterricht bei folgenden Lehrpersonen versäumt:</h2>
+            
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
               <FormField
                 control={form.control}
-                name="studentClass"
+                name="teachers"
                 render={({ field }) => (
-                  <FormItem className="w-24">
-                    <FormLabel>Klasse</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormItem>
+                    <FormLabel>Lehrperson</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        if (!field.value.includes(value)) {
+                          field.onChange([...field.value, value]);
+                        }
+                      }}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Klasse" />
+                          <SelectValue placeholder="Lehrpersonen auswählen" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {dropdowns.classes.map((item) => (
+                        {dropdowns.teachers.map((item) => (
                           <SelectItem key={item} value={item}>
                             {item}
                           </SelectItem>
@@ -214,108 +411,71 @@ export function AbsenceForm() {
                   </FormItem>
                 )}
               />
-            </div>
-                
-            <FormField
-              control={form.control}
-              name="teacherName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Lehrperson</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+              
+              <FormField
+                control={form.control}
+                name="absenceDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Datum der Absenz</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Lehrperson auswählen" />
-                      </SelectTrigger>
+                      <Input type="date" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {dropdowns.teachers.map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="lessonCount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Anzahl Lektionen</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
+            {/* Ausgewählte Lehrer */}
             <FormField
               control={form.control}
-              name="absenceType"
+              name="teachers"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Abwesenheitstyp</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Typ auswählen" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {dropdowns.absenceTypes.map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                <div>
+                  {field.value.length > 0 && (
+                    <div className="mb-4">
+                      <div className="text-sm font-medium mb-2">Ausgewählte Lehrpersonen:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {field.value.map((teacher, index) => (
+                          <div 
+                            key={index} 
+                            className="flex items-center space-x-1 bg-gray-100 px-2 py-1 rounded"
+                          >
+                            <span>{teacher}</span>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const newTeachers = [...field.value];
+                                newTeachers.splice(index, 1);
+                                field.onChange(newTeachers);
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             />
-          </div>
-          
-          {/* Grund der Abwesenheit */}
-          <div className="border-t border-b border-gray-200 py-4">
-            <h2 className="text-lg font-semibold mb-4">Grund</h2>
-            <FormField
-              control={form.control}
-              name="reason"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea rows={4} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          {/* Daten der Abwesenheit */}
-          <div className="border-b border-gray-200 pb-4">
-            <h2 className="text-lg font-semibold mb-4">Daten der Abwesenheit</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="dateStart"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Abwesend von</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dateEnd"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Abwesend bis</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
           </div>
           
           {/* Bestätigung */}

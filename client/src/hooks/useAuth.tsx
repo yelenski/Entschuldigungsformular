@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['/api/auth/me'],
     queryFn: async ({ signal }) => {
       const response = await fetch('/api/auth/me', {
@@ -45,15 +45,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await response.json();
     },
     retry: false,
-    onSuccess: (data) => {
-      if (data) {
-        setUser(data);
-      }
-    },
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 30, // 30 minutes
   });
+  
+  // Aktualisiere den Benutzer, wenn die Abfrage erfolgreich ist
+  useEffect(() => {
+    if (data) {
+      setUser(data);
+    }
+  }, [data]);
 
   const login = (userData: User) => {
     setUser(userData);
+    // Aktualisiere die Abfrage, damit der Benutzer als eingeloggt gilt
+    // und wir uns nicht zweimal anmelden müssen
+    refetch();
   };
 
   const logout = () => {

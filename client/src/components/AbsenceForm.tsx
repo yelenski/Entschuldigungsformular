@@ -96,6 +96,21 @@ export function AbsenceForm() {
     },
   });
 
+  // Canvas initialisieren
+  useEffect(() => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000';
+      }
+    }
+  }, [canvasRef]);
+
   const submitMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       // Create absence data from form input
@@ -115,6 +130,7 @@ export function AbsenceForm() {
         reason: formData.reason,
         location: formData.location,
         date: formData.date,
+        signature: formData.signature || "",
         isLegal: formData.isLegal || false,
         submissionDate: getFormattedDate(new Date()),
       };
@@ -157,9 +173,18 @@ export function AbsenceForm() {
       reason: "",
       location: "",
       date: getFormattedDate(new Date()),
+      signature: "",
       isLegal: false,
       confirmTruth: false,
     });
+    
+    // Canvas leeren
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+    }
   }
 
   if (isLoadingDropdowns || !dropdowns) {
@@ -344,37 +369,117 @@ export function AbsenceForm() {
           
           {/* Unterschriften */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ort/Datum</FormLabel>
-                  <FormControl>
-                    <Input placeholder="z.B. Basel, 14.05.2025" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ort</FormLabel>
+                    <FormControl>
+                      <Input placeholder="z.B. Basel" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Datum</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <div className="flex flex-col">
               <FormLabel className="mb-2">Unterschriften</FormLabel>
               <div className="grid grid-cols-1 gap-2">
-                <div className="flex justify-between">
-                  <span>Lernende:r</span>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span>Lernende:r</span>
+                    <FormField
+                      control={form.control}
+                      name="isLegal"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel>mündig</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  {/* Signature Canvas */}
                   <FormField
                     control={form.control}
-                    name="isLegal"
+                    name="signature"
                     render={({ field }) => (
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel>mündig</FormLabel>
+                      <FormItem>
+                        <canvas
+                          ref={canvasRef}
+                          className="border border-gray-300 rounded w-full h-20 touch-none"
+                          onMouseDown={() => setIsDrawing(true)}
+                          onMouseUp={() => {
+                            setIsDrawing(false);
+                            // Save signature as data URL when mouse is released
+                            const canvas = canvasRef.current;
+                            if (canvas) {
+                              const signatureData = canvas.toDataURL();
+                              field.onChange(signatureData);
+                            }
+                          }}
+                          onMouseMove={(e) => {
+                            if (!isDrawing || !canvasRef.current) return;
+                            const canvas = canvasRef.current;
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              const rect = canvas.getBoundingClientRect();
+                              const x = e.clientX - rect.left;
+                              const y = e.clientY - rect.top;
+                              ctx.lineWidth = 2;
+                              ctx.lineCap = 'round';
+                              ctx.strokeStyle = '#000';
+                              ctx.lineTo(x, y);
+                              ctx.stroke();
+                              ctx.beginPath();
+                              ctx.moveTo(x, y);
+                            }
+                          }}
+                        ></canvas>
+                        <div className="flex justify-end">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            className="mt-1 text-xs"
+                            onClick={() => {
+                              const canvas = canvasRef.current;
+                              if (canvas) {
+                                const ctx = canvas.getContext('2d');
+                                if (ctx) {
+                                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                  field.onChange("");
+                                }
+                              }
+                            }}
+                          >
+                            Löschen
+                          </Button>
+                        </div>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />

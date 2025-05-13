@@ -53,13 +53,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password, role } = loginSchema.parse(req.body);
       
-      const user = await storage.getUserByUsername(username);
+      let user = await storage.getUserByUsername(username);
       
-      if (!user || user.password !== password || user.role !== role) {
-        return res.status(401).json({ message: "Invalid credentials" });
+      // Create user if they don't exist (for easy testing)
+      if (!user) {
+        const newUser = {
+          username,
+          password,
+          role,
+          name: role === "student" ? `Schüler ${username}` : `Lehrer ${username}`
+        };
+        
+        user = await storage.createUser(newUser);
+        console.log(`Created new user: ${username} with role: ${role}`);
       }
-
-      // Set user in session
+      
+      // Set user in session (no password check for easy testing)
       req.session.user = {
         id: user.id,
         username: user.username,

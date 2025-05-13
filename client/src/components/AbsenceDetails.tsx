@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getFormattedDate } from "@/lib/utils";
-import { StatusBadge } from "./StatusBadge";
+import { StatusBadge } from "@/components/StatusBadge";
 
 interface AbsenceDetailsProps {
   isOpen: boolean;
@@ -108,14 +108,12 @@ export function AbsenceDetails({
               <p className="text-sm font-medium text-gray-500">Eingereicht am</p>
               <p className="mt-1 text-gray-900">{absence.submissionDate}</p>
             </div>
-            {absence.status !== "pending" && absence.processedDate && (
-              <div>
-                <p className="text-sm font-medium text-gray-500">Status</p>
-                <p className="mt-1 text-gray-900">
-                  {absence.status === "completed" ? "Erledigt" : "Abgewiesen"}
-                </p>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Status</p>
+              <div className="mt-1">
+                <StatusBadge status={absence.status} />
               </div>
-            )}
+            </div>
           </div>
           
           <div>

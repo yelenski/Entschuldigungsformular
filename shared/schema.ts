@@ -30,7 +30,7 @@ export const absences = pgTable("absences", {
   dateEnd: text("date_end").notNull(),
   reason: text("reason").notNull(),
   submissionDate: text("submission_date").notNull(),
-  status: text("status").notNull().default("pending"), // "pending", "completed", "rejected"
+  status: text("status").notNull().default("pending"), // "pending", "approved", "rejected", "awaiting_docs", "under_review", "expired"
   processedDate: text("processed_date"),
 });
 
@@ -55,6 +55,13 @@ export const loginSchema = z.object({
 
 export const absenceStatusSchema = z.object({
   id: z.number(),
-  status: z.enum(["completed", "rejected"]),
+  status: z.enum([
+    "pending", 
+    "approved", 
+    "rejected", 
+    "awaiting_docs", 
+    "under_review", 
+    "expired"
+  ]),
   processedDate: z.string(),
 });

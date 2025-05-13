@@ -66,6 +66,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         user = await storage.createUser(newUser);
         console.log(`Created new user: ${username} with role: ${role}`);
+      } else if (user.role !== role) {
+        // If user exists but with a different role, update the role for testing
+        user.role = role;
+        console.log(`Updated user ${username} role to: ${role}`);
       }
       
       // Set user in session (no password check for easy testing)
@@ -73,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         username: user.username,
         name: user.name,
-        role: user.role
+        role: role // Use the requested role
       };
 
       return res.status(200).json({

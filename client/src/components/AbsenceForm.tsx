@@ -106,7 +106,17 @@ export function AbsenceForm() {
         title: "Erfolgreich",
         description: "Entschuldigung wurde erfolgreich eingereicht.",
       });
-      form.reset();
+      // Reset the form with empty values
+      form.reset({
+        studentClass: "",
+        profession: "",
+        teacherName: "",
+        absenceType: "",
+        dateStart: "",
+        dateEnd: "",
+        reason: "",
+        confirmTruth: false,
+      });
     },
     onError: (error: Error) => {
       toast({

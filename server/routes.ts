@@ -136,6 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       absences = await storage.getAllAbsences();
     }
     
+    console.log("Returning absences:", absences);
     return res.status(200).json(absences);
   });
 

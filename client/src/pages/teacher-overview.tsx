@@ -21,6 +21,7 @@ export default function TeacherOverview() {
   // Fetch absences
   const { data: allAbsences, isLoading, refetch } = useQuery<Absence[]>({
     queryKey: ['/api/absences'],
+    refetchInterval: 3000, // Refetch data every 3 seconds
   });
 
   const pendingAbsences = allAbsences?.filter(absence => absence.status === 'pending') || [];

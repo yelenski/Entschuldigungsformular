@@ -50,8 +50,8 @@ const formSchema = z.object({
     required_error: "Bitte Enddatum angeben",
   }),
   reason: z.string().min(5, "Die Begründung muss mindestens 5 Zeichen enthalten"),
-  confirmTruth: z.literal(true, {
-    invalid_type_error: "Sie müssen bestätigen, dass alle Angaben wahrheitsgemäß sind",
+  confirmTruth: z.boolean().refine(val => val === true, {
+    message: "Sie müssen bestätigen, dass alle Angaben wahrheitsgemäß sind",
   }),
 });
 
@@ -98,6 +98,7 @@ export function AbsenceForm() {
         submissionDate: getFormattedDate(new Date()),
       };
 
+      console.log("Submitting absence:", absenceData);
       const response = await apiRequest("POST", "/api/absences", absenceData);
       return await response.json();
     },
@@ -129,6 +130,20 @@ export function AbsenceForm() {
 
   function onSubmit(data: FormData) {
     submitMutation.mutate(data);
+    
+    // Reset the form immediately after submission
+    setTimeout(() => {
+      form.reset({
+        studentClass: "",
+        profession: "",
+        teacherName: "",
+        absenceType: "",
+        dateStart: "",
+        dateEnd: "",
+        reason: "",
+        confirmTruth: false,
+      });
+    }, 500); // Short delay to ensure mutation has time to process
   }
 
   if (isLoadingDropdowns || !dropdowns) {

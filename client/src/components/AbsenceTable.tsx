@@ -2,6 +2,7 @@ import { Absence } from "@shared/schema";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "./StatusBadge";
+import { useEffect } from "react";
 
 interface AbsenceTableProps {
   absences: Absence[];
@@ -18,13 +19,40 @@ export function AbsenceTable({
   onContextMenu,
   type
 }: AbsenceTableProps) {
+  // Add debug logging
+  useEffect(() => {
+    console.log("AbsenceTable - Current absences:", absences);
+  }, [absences]);
+
   if (isLoading) {
     return <LoadingState />;
   }
 
-  if (absences.length === 0) {
+  // Validate absences data
+  const validAbsences = absences.filter(absence => {
+    if (!absence.studentClass) {
+      console.warn("Found absence without studentClass:", absence);
+      return false;
+    }
+    return true;
+  });
+
+  if (validAbsences.length === 0) {
     return <EmptyState type={type} />;
   }
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return dateString;
+    }
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -33,7 +61,8 @@ export function AbsenceTable({
           <TableRow>
             <TableHead>Schüler</TableHead>
             <TableHead>Klasse</TableHead>
-            <TableHead>Typ</TableHead>
+            <TableHead>Schultyp</TableHead>
+            <TableHead>Grund</TableHead>
             <TableHead>Von</TableHead>
             <TableHead>Bis</TableHead>
             <TableHead>Status</TableHead>
@@ -43,7 +72,7 @@ export function AbsenceTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {absences.map((absence) => (
+          {validAbsences.map((absence) => (
             <TableRow
               key={absence.id}
               onClick={() => onAbsenceClick(absence)}
@@ -52,16 +81,17 @@ export function AbsenceTable({
             >
               <TableCell className="font-medium">{absence.studentName}</TableCell>
               <TableCell>{absence.studentClass}</TableCell>
-              <TableCell>{absence.absenceType}</TableCell>
-              <TableCell>{absence.dateStart}</TableCell>
-              <TableCell>{absence.dateEnd}</TableCell>
+              <TableCell>{absence.educationType || "-"}</TableCell>
+              <TableCell>{absence.reason}</TableCell>
+              <TableCell>{formatDate(absence.dateStart)}</TableCell>
+              <TableCell>{formatDate(absence.dateEnd)}</TableCell>
               <TableCell>
                 <StatusBadge status={absence.status} />
               </TableCell>
               <TableCell>
                 {type === "pending" 
-                  ? absence.submissionDate 
-                  : absence.processedDate}
+                  ? formatDate(absence.submissionDate)
+                  : absence.processedDate ? formatDate(absence.processedDate) : '-'}
               </TableCell>
             </TableRow>
           ))}
@@ -70,8 +100,6 @@ export function AbsenceTable({
     </div>
   );
 }
-
-
 
 function LoadingState() {
   return (

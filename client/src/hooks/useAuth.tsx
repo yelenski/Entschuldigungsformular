@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface User {
   id: number;
@@ -13,7 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,35 +22,33 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   login: () => {},
-  logout: () => {},
+  logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
   
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery<User | null>({
     queryKey: ['/api/auth/me'],
-    queryFn: async ({ signal }) => {
-      const response = await fetch('/api/auth/me', {
-        signal,
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", '/api/auth/me');
+        const userData = await response.json();
+        return userData as User;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("401")) {
           return null;
         }
-        throw new Error('Failed to get user session');
+        throw error;
       }
-      
-      return await response.json();
     },
-    retry: false,
+    retry: 0,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 30, // 30 minutes
+    refetchOnMount: false,
+    staleTime: Infinity
   });
   
-  // Aktualisiere den Benutzer, wenn die Abfrage erfolgreich ist
   useEffect(() => {
     if (data) {
       setUser(data);
@@ -58,20 +57,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = (userData: User) => {
     setUser(userData);
-    // Aktualisiere die Abfrage, damit der Benutzer als eingeloggt gilt
-    // und wir uns nicht zweimal anmelden müssen
-    refetch();
+    queryClient.setQueryData(['/api/auth/me'], userData);
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    try {
+      await apiRequest("POST", '/api/auth/logout');
+      setUser(null);
+      queryClient.setQueryData(['/api/auth/me'], null);
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
   };
-
-  const isAuthenticated = !!user;
 
   const value = {
     user,
-    isAuthenticated,
+    isAuthenticated: !!user,
     isLoading,
     login,
     logout,

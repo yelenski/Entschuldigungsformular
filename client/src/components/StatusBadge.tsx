@@ -9,9 +9,10 @@ import {
 
 interface StatusBadgeProps {
   status: string;
+  className?: string;
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status, className }: StatusBadgeProps) {
   const statusConfig = {
     pending: {
       label: "Ausstehend",
@@ -57,7 +58,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   }
   
   return (
-    <span className={`px-2 inline-flex items-center text-xs leading-5 font-semibold rounded-full ${config.className}`}>
+    <span className={`px-2 inline-flex items-center text-xs leading-5 font-semibold rounded-full ${config.className} ${className || ''}`}>
       {config.icon}
       {config.label}
     </span>

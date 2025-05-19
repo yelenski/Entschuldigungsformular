@@ -7,19 +7,43 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Ensure URL starts with /api
+function ensureApiUrl(url: string): string {
+  if (!url.startsWith('/api')) {
+    return `/api${url.startsWith('/') ? url : `/${url}`}`;
+  }
+  return url;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const apiUrl = ensureApiUrl(url);
+  console.log(`Making ${method} request to ${apiUrl}`); // Debug log
+  
+  const res = await fetch(apiUrl, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      "Accept": "application/json"
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
+    mode: "cors"
   });
 
-  await throwIfResNotOk(res);
+  console.log(`Response status: ${res.status}`); // Debug log
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`API Error: ${res.status}`, errorText); // Debug log
+    throw new Error(
+      errorText || `${res.status}: ${res.statusText}`
+    );
+  }
+  
   return res;
 }
 

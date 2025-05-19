@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 :root {
       --background: 0 0% 100%;
@@ -47,12 +47,19 @@
 --radius: 0.5rem;
   }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
+* {
+  border-color: var(--border);
+}
 
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-  }
+body {
+  font-family: sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }

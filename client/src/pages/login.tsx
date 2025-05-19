@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useState } from "react";
+import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -28,10 +28,23 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const formSchema = z.object({
-  username: z.string().min(1, "Benutzername ist erforderlich"),
-  password: z.string().min(1, "Passwort ist erforderlich"),
+  username: z.string()
+    .min(1, "Benutzername ist erforderlich")
+    .refine((val) => val.trim().length > 0, {
+      message: "Benutzername darf nicht leer sein",
+    }),
+  password: z.string()
+    .min(1, "Passwort ist erforderlich")
+    .min(6, "Passwort muss mindestens 6 Zeichen lang sein")
+    .regex(/[A-Z]/, "Passwort muss mindestens einen Grossbuchstaben enthalten")
+    .regex(/[a-z]/, "Passwort muss mindestens einen Kleinbuchstaben enthalten")
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Passwort muss mindestens ein Sonderzeichen enthalten")
+    .refine((val) => val.trim().length > 0, {
+      message: "Passwort darf nicht leer sein",
+    }),
   role: z.enum(["student", "teacher"], {
     required_error: "Bitte wählen Sie eine Rolle",
+    invalid_type_error: "Ungültige Rolle ausgewählt",
   }),
 });
 
@@ -40,10 +53,17 @@ type FormData = z.infer<typeof formSchema>;
 export default function Login() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const { login } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isAuthenticated, user } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && user && !isPending) {
+      const redirectPath = user.role === "student" ? "/student/form" : "/teacher/overview";
+      setTimeout(() => setLocation(redirectPath), 0);
+    }
+  }, [isAuthenticated, user, setLocation]);
 
   const form = useForm<FormData>({
+    mode: "onChange", // Aktiviert Live-Validierung während der Eingabe
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
@@ -52,15 +72,28 @@ export default function Login() {
     },
   });
 
-  const loginMutation = useMutation({
+  const { mutate: submitLogin, isPending } = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await apiRequest("POST", "/api/auth/login", data);
-      const user = await response.json();
-      return user;
+      try {
+        const response = await apiRequest("POST", "/api/auth/login", data);
+        const result = await response.json();
+        return result;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("401")) {
+          throw new Error("Bitte überprüfen Sie Ihre Anmeldedaten");
+        }
+        throw new Error("Ein unerwarteter Fehler ist aufgetreten");
+      }
     },
     onSuccess: (data) => {
       login(data);
-      // Redirect based on role
+      const roleText = data.role === "teacher" ? "Lehrer" : "Schüler";
+      
+      toast({
+        title: "Erfolgreich angemeldet",
+        description: `Willkommen zurück, ${data.name}!`,
+      });
+      
       if (data.role === "student") {
         setLocation("/student/form");
       } else {
@@ -70,88 +103,63 @@ export default function Login() {
     onError: (error: Error) => {
       toast({
         title: "Anmeldung fehlgeschlagen",
-        description: error.message || "Bitte überprüfen Sie Ihre Anmeldedaten",
+        description: error.message,
         variant: "destructive",
       });
-    },
-    onSettled: () => {
-      setIsLoading(false);
-    },
+    }
   });
 
   function onSubmit(data: FormData) {
-    setIsLoading(true);
-    loginMutation.mutate(data);
+    if (!data.username || !data.password || !data.role) {
+      toast({
+        title: "Fehlende Eingaben",
+        description: "Bitte füllen Sie alle Felder aus",
+        variant: "destructive",
+      });
+      return;
+    }
+    submitLogin(data);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-primary mb-2">
-            Schulentschuldigungssystem
-          </CardTitle>
-          <CardDescription>
-            Bitte melden Sie sich an, um fortzufahren
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Anmeldung</CardTitle>
+          <CardDescription className="text-center">
+            Melden Sie sich an, um fortzufahren
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Benutzername</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Benutzername eingeben" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Passwort</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Passwort eingeben"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="role"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="space-y-1">
+                    <FormLabel>Rolle</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
                         defaultValue={field.value}
-                        className="flex items-center space-x-4"
+                        className="flex space-x-4"
                       >
                         <FormItem className="flex items-center space-x-2">
                           <FormControl>
                             <RadioGroupItem value="student" />
                           </FormControl>
-                          <FormLabel className="font-normal">Schüler</FormLabel>
+                          <FormLabel className="font-normal">
+                            Schüler
+                          </FormLabel>
                         </FormItem>
                         <FormItem className="flex items-center space-x-2">
                           <FormControl>
                             <RadioGroupItem value="teacher" />
                           </FormControl>
-                          <FormLabel className="font-normal">Lehrer</FormLabel>
+                          <FormLabel className="font-normal">
+                            Lehrer
+                          </FormLabel>
                         </FormItem>
                       </RadioGroup>
                     </FormControl>
@@ -159,13 +167,34 @@ export default function Login() {
                   </FormItem>
                 )}
               />
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Anmeldung..." : "Anmelden"}
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Benutzername</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Benutzername" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Passwort</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="********" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Anmeldung..." : "Anmelden"}
               </Button>
             </form>
           </Form>

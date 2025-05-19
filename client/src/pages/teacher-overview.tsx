@@ -21,11 +21,20 @@ export default function TeacherOverview() {
   // Fetch absences
   const { data: allAbsences, isLoading, refetch } = useQuery<Absence[]>({
     queryKey: ['/api/absences'],
-    refetchInterval: 3000, // Refetch data every 3 seconds
+    queryFn: async () => {
+      const response = await fetch('/api/absences', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch absences');
+      }
+      return response.json();
+    },
+    refetchInterval: 3000 // Refetch data every 3 seconds
   });
 
-  const pendingAbsences = allAbsences?.filter(absence => absence.status === 'pending') || [];
-  const processedAbsences = allAbsences?.filter(absence => absence.status !== 'pending') || [];
+  const pendingAbsences = allAbsences?.filter(absence => absence.status === 'pending') ?? [];
+  const processedAbsences = allAbsences?.filter(absence => absence.status !== 'pending') ?? [];
 
   useEffect(() => {
     // Redirect if not authenticated or not a teacher

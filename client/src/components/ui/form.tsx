@@ -109,8 +109,16 @@ const FormControl = React.forwardRef<
 >(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
-  return (
+  const Slotted = React.forwardRef<HTMLElement>((slotProps, slotRef) => (
     <Slot
+      ref={slotRef}
+      {...slotProps}
+    />
+  ))
+  Slotted.displayName = "Slotted"
+
+  return (
+    <Slotted
       ref={ref}
       id={formItemId}
       aria-describedby={

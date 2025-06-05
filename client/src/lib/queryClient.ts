@@ -37,11 +37,8 @@ export async function apiRequest(
     mode: "cors",
   });
 
-  console.log(`Response status: ${res.status}`); // Debug log
-
   if (!res.ok) {
     const errorText = await res.text();
-    console.error(`API Error: ${res.status}`, errorText); // Debug log
     throw new Error(errorText || `${res.status}: ${res.statusText}`);
   }
 

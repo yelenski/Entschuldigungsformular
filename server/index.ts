@@ -9,39 +9,33 @@ import MemoryStore from "memorystore";
 const app = express();
 const MemoryStoreSession = MemoryStore(session);
 
-// Configure CORS before any other middleware
 app.use(
   cors({
-    origin: "https://entschuldigungsformular.netlify.app", // deine Netlify-Domain
+    origin: "https://entschuldigungsformular.netlify.app",
     credentials: true,
   })
 );
 
-// Configure session middleware with secure settings
-app.use(session({
-  secret: "school-absence-system-secret",
-  resave: true, // Changed to true to ensure session is always saved
-  saveUninitialized: false,
-  store: new MemoryStoreSession({
-    checkPeriod: 86400000 // prune expired entries every 24h
-  }),
-  name: 'session-id', // Custom session ID name to avoid conflicts
-  cookie: {
-    secure: false, // Set to false for development to work with http
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/' // Ensure cookie is available for all paths
-  }
-}));
+app.use(
+  session({
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000,
+    }),
+    name: 'session-id',
+    secret: 'keyboard cat',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true,
+      httpOnly: true,
+      sameSite: "none",
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-app.use(cors({
-  origin: "https://entschuldigungsformular.netlify.app",
-  credentials: true
-}));
 
 app.use("/login", loginRouter);
 

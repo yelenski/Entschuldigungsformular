@@ -1,5 +1,9 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+type UnauthorizedBehavior = "returnNull" | "throw";
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -18,42 +22,41 @@ function ensureApiUrl(url: string): string {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown,
 ): Promise<Response> {
-const apiUrl = `${import.meta.env.VITE_API_URL}${ensureApiUrl(url)}`;
-  console.log(`Making ${method} request to ${apiUrl}`); // Debug log
-  
+  const apiUrl = BASE_URL + ensureApiUrl(url);
+
   const res = await fetch(apiUrl, {
     method,
     headers: {
       ...(data ? { "Content-Type": "application/json" } : {}),
-      "Accept": "application/json"
+      Accept: "application/json",
     },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
-    mode: "cors"
+    mode: "cors",
   });
 
   console.log(`Response status: ${res.status}`); // Debug log
-  
+
   if (!res.ok) {
     const errorText = await res.text();
     console.error(`API Error: ${res.status}`, errorText); // Debug log
-    throw new Error(
-      errorText || `${res.status}: ${res.statusText}`
-    );
+    throw new Error(errorText || `${res.status}: ${res.statusText}`);
   }
-  
+
   return res;
 }
 
-type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    const relativeUrl = queryKey[0] as string;
+    const apiUrl = BASE_URL + ensureApiUrl(relativeUrl);
+
+    const res = await fetch(apiUrl, {
       credentials: "include",
     });
 

@@ -38,10 +38,18 @@ export default function Login() {
   }, [isAuthenticated, user, setLocation]);
 
   const { mutate: submitLogin, isPending } = useMutation({
-    mutationFn: async (data: { username: string; password: string; role: string }) => {
-      const response = await apiRequest("POST", `${import.meta.env.VITE_API_URL}/login`, data);
-      return await response.json();
-    },
+mutationFn: async (data: { username: string; password: string; role: string }) => {
+  const response = await apiRequest("POST", `${import.meta.env.VITE_API_URL}/login`, data);
+
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return await response.json();
+  } else {
+    const text = await response.text();
+    throw new Error(`Antwort ist kein JSON: ${text}`);
+  }
+},
+    
     onSuccess: (data) => {
       login(data);
       toast({

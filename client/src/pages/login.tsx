@@ -39,7 +39,7 @@ export default function Login() {
 
   const { mutate: submitLogin, isPending } = useMutation({
     mutationFn: async (data: { username: string; password: string; role: string }) => {
-      const response = await apiRequest("POST", "/login", data);
+      const response = await apiRequest("POST", `${import.meta.env.VITE_API_URL}/login`, data);
       return await response.json();
     },
     onSuccess: (data) => {

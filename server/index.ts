@@ -1,28 +1,34 @@
-import cors from "cors";
-import loginRouter from "./routes/login";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import cors from "cors";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import loginRouter from "./routes/login";
+import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 const MemoryStoreSession = MemoryStore(session);
 
+// CORS-Konfiguration für Zugriff von Netlify
+const allowedOrigins = [
+  "https://entschuldigungsformular.netlify.app"
+];
+
 app.use(
   cors({
-    origin: "https://entschuldigungsformular.netlify.app",
+    origin: allowedOrigins,
     credentials: true,
   })
 );
 
+// Session-Konfiguration
 app.use(
   session({
     store: new MemoryStoreSession({
-      checkPeriod: 86400000,
+      checkPeriod: 86400000, // 24h
     }),
-    name: 'session-id',
-    secret: 'keyboard cat',
+    name: "session-id",
+    secret: "keyboard cat",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -34,24 +40,27 @@ app.use(
   })
 );
 
+// Body-Parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Routen
 app.use("/login", loginRouter);
 
-// Session debug middleware
+// Session-Debug-Logging
 app.use((req, res, next) => {
   if (req.path.startsWith("/api")) {
     console.log("Session Debug:", {
       path: req.path,
       sessionID: req.sessionID,
       hasSession: !!req.session,
-      user: req.session?.user
+      user: req.session?.user,
     });
   }
   next();
 });
 
+// Request-Logger
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -70,11 +79,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       log(logLine);
     }
   });
@@ -85,30 +92,26 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Error-Handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Vite nur in Entwicklung einbinden
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 3000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Server starten
   const port = 3000;
   server.listen({
     port,
-    host: "0.0.0.0", // Geändert von "127.0.0.1" zu "0.0.0.0"
+    host: "0.0.0.0",
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);

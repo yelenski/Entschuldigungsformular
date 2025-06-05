@@ -1,8 +1,8 @@
+import cors from "cors";
 import loginRouter from "./routes/login";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import cors from "cors";
 import session from "express-session";
 import MemoryStore from "memorystore";
 
@@ -10,10 +10,12 @@ const app = express();
 const MemoryStoreSession = MemoryStore(session);
 
 // Configure CORS before any other middleware
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "https://entschuldigungsformular.netlify.app", // deine Netlify-Domain
+    credentials: true,
+  })
+);
 
 // Configure session middleware with secure settings
 app.use(session({

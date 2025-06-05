@@ -20,7 +20,7 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const apiUrl = ensureApiUrl(url);
+const apiUrl = `${import.meta.env.VITE_API_URL}${ensureApiUrl(url)}`;
   console.log(`Making ${method} request to ${apiUrl}`); // Debug log
   
   const res = await fetch(apiUrl, {

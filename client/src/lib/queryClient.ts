@@ -11,20 +11,12 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-// Ensure URL starts with /api
-function ensureApiUrl(url: string): string {
-  if (!url.startsWith('/api')) {
-    return `/api${url.startsWith('/') ? url : `/${url}`}`;
-  }
-  return url;
-}
-
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown,
 ): Promise<Response> {
-  const apiUrl = BASE_URL + ensureApiUrl(url);
+  const apiUrl = BASE_URL + url;
 
   const res = await fetch(apiUrl, {
     method,
@@ -51,7 +43,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const relativeUrl = queryKey[0] as string;
-    const apiUrl = BASE_URL + ensureApiUrl(relativeUrl);
+    const apiUrl = BASE_URL + relativeUrl;
 
     const res = await fetch(apiUrl, {
       credentials: "include",

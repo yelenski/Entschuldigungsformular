@@ -1,3 +1,4 @@
+import { apiRequest } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,15 +21,10 @@ export default function TeacherOverview() {
 
   // Fetch absences
   const { data: allAbsences, isLoading, refetch } = useQuery<Absence[]>({
-    queryKey: ['/api/absences'],
+    queryKey: ['absences'],
     queryFn: async () => {
-      const response = await fetch('/api/absences', {
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch absences');
-      }
-      return response.json();
+      const response = await apiRequest("GET", "/absences");
+      return await response.json();
     },
     refetchInterval: 3000 // Refetch data every 3 seconds
   });

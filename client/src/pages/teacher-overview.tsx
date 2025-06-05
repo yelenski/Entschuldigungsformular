@@ -16,16 +16,43 @@ export default function TeacherOverview() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-  const [activeTab, setActiveTab] = useState("pending");
+  const [activeTab, setActiveTab] = useState("offen");
 
   // Fetch absences
   const { data: allAbsences, isLoading, refetch } = useQuery<Absence[]>({
     queryKey: ['/api/absences'],
-    refetchInterval: 3000, // Refetch data every 3 seconds
+    queryFn: async () => {
+      const response = await fetch('/api/absences', {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch absences');
+      }
+      return response.json();
+    },
+    refetchInterval: 3000 // Refetch data every 3 seconds
   });
 
-  const pendingAbsences = allAbsences?.filter(absence => absence.status === 'pending') || [];
-  const processedAbsences = allAbsences?.filter(absence => absence.status !== 'pending') || [];
+  // Mapping Backend-Status zu deutschen Status
+  function mapStatusToGerman(status: string) {
+    switch (status) {
+      case 'pending': return 'Aussenstehend';
+      case 'awaiting_docs': return 'Dokument Anfordern';
+      case 'under_review': return 'In Prüfung';
+      case 'approved': return 'Genehmigt';
+      case 'rejected': return 'Abgelehnt';
+      case 'expired': return 'Abgelaufen';
+      default: return status;
+    }
+  }
+  const mappedAbsences = allAbsences?.map(absence => ({ ...absence, status: mapStatusToGerman(absence.status) })) ?? [];
+
+  // Einfache Tab-Filterung: Jeder Eintrag nur nach gemapptem Status
+  const exklusiveOffene = mappedAbsences.filter(absence => absence.status === 'Aussenstehend');
+  const exklusiveInBearbeitung = mappedAbsences.filter(absence =>
+    absence.status === 'Dokument Anfordern' || absence.status === 'In Prüfung');
+  const exklusiveAbgeschlossen = mappedAbsences.filter(absence =>
+    absence.status === 'Genehmigt' || absence.status === 'Abgelehnt' || absence.status === 'Abgelaufen');
 
   useEffect(() => {
     // Redirect if not authenticated or not a teacher
@@ -73,33 +100,46 @@ export default function TeacherOverview() {
           <div className="mb-6">
             <div className="bg-white shadow-md rounded-lg overflow-hidden">
               <Tabs 
-                defaultValue="pending" 
+                defaultValue="offen" 
                 value={activeTab}
                 onValueChange={setActiveTab}
                 className="w-full"
               >
                 <TabsList className="border-b w-full justify-start rounded-none">
-                  <TabsTrigger value="pending" className="px-6 py-3">
-                    Offene Entschuldigungen
+                  <TabsTrigger value="offen" className="px-6 py-3">
+                    Offen
                   </TabsTrigger>
-                  <TabsTrigger value="processed" className="px-6 py-3">
-                    Verarbeitete Entschuldigungen
+                  <TabsTrigger value="bearbeitung" className="px-6 py-3">
+                    In Bearbeitung
+                  </TabsTrigger>
+                  <TabsTrigger value="abgeschlossen" className="px-6 py-3">
+                    Abgeschlossen
                   </TabsTrigger>
                 </TabsList>
-                
-                <TabsContent value="pending">
+
+                <TabsContent value="offen">
                   <AbsenceTable 
-                    absences={pendingAbsences}
+                    absences={exklusiveOffene}
                     isLoading={isLoading}
                     onAbsenceClick={handleAbsenceClick}
                     onContextMenu={handleContextMenu}
                     type="pending"
                   />
                 </TabsContent>
-                
-                <TabsContent value="processed">
+
+                <TabsContent value="bearbeitung">
                   <AbsenceTable 
-                    absences={processedAbsences}
+                    absences={exklusiveInBearbeitung}
+                    isLoading={isLoading}
+                    onAbsenceClick={handleAbsenceClick}
+                    onContextMenu={handleContextMenu}
+                    type="bearbeitung"
+                  />
+                </TabsContent>
+
+                <TabsContent value="abgeschlossen">
+                  <AbsenceTable 
+                    absences={exklusiveAbgeschlossen}
                     isLoading={isLoading}
                     onAbsenceClick={handleAbsenceClick}
                     onContextMenu={handleContextMenu}

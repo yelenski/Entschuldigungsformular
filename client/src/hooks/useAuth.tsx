@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface User {
   id: number;
@@ -27,51 +28,52 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery<User | null>({
     queryKey: ['/api/auth/me'],
-    queryFn: async ({ signal }) => {
-      const response = await fetch('/api/auth/me', {
-        signal,
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
+    queryFn: async () => {
+      try {
+        const response = await apiRequest("GET", '/api/auth/me');
+        const userData = await response.json();
+        return userData as User;
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("401")) {
           return null;
         }
-        throw new Error('Failed to get user session');
+        throw error;
       }
-      
-      return await response.json();
     },
     retry: false,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 30, // 30 minutes
+    refetchOnMount: true,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 0
   });
   
-  // Aktualisiere den Benutzer, wenn die Abfrage erfolgreich ist
   useEffect(() => {
     if (data) {
       setUser(data);
+    } else {
+      setUser(null);
     }
   }, [data]);
 
   const login = (userData: User) => {
     setUser(userData);
-    // Aktualisiere die Abfrage, damit der Benutzer als eingeloggt gilt
-    // und wir uns nicht zweimal anmelden müssen
-    refetch();
   };
 
-  const logout = () => {
-    setUser(null);
-  };
+  const logout = async () => {
+    try {
+      await apiRequest("POST", '/api/auth/logout');
+      setUser(null);
 
-  const isAuthenticated = !!user;
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
 
   const value = {
     user,
-    isAuthenticated,
+    isAuthenticated: !!user,
     isLoading,
     login,
     logout,

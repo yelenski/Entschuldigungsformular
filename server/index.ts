@@ -1,10 +1,52 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import cors from "cors";
+import session from "express-session";
+import MemoryStore from "memorystore";
 
 const app = express();
+const MemoryStoreSession = MemoryStore(session);
+
+// Configure CORS before any other middleware
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
+// Configure session middleware with secure settings
+app.use(session({
+  secret: "school-absence-system-secret",
+  resave: true, // Changed to true to ensure session is always saved
+  saveUninitialized: false,
+  store: new MemoryStoreSession({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  }),
+  name: 'session-id', // Custom session ID name to avoid conflicts
+  cookie: {
+    secure: false, // Set to false for development to work with http
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/' // Ensure cookie is available for all paths
+  }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Session debug middleware
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    console.log("Session Debug:", {
+      path: req.path,
+      sessionID: req.sessionID,
+      hasSession: !!req.session,
+      user: req.session?.user
+    });
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -56,13 +98,13 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
+  // ALWAYS serve the app on port 3000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
+  const port = 3000;
   server.listen({
     port,
-    host: "0.0.0.0",
+    host: "0.0.0.0", // Geändert von "127.0.0.1" zu "0.0.0.0"
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);

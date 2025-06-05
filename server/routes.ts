@@ -1,128 +1,231 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ZodError } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { z } from "zod";
+import path from "path";
+import { fileURLToPath } from "url";
+import { promises as fs } from "fs";
 import { 
   loginSchema, 
   insertAbsenceSchema, 
-  absenceStatusSchema
+  absenceStatusSchema,
+  type Absence,
+  type InsertAbsence
 } from "@shared/schema";
+import { Router } from "express";
+
+// Add at the top of the file
+declare module "express-session" {
+  interface SessionData {
+    user?: {
+      id: number;
+      username: string;
+      name: string;
+      role: string;
+    };
+  }
+}
+
+// Ermittle den aktuellen Verzeichnispfad
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const MemoryStoreSession = MemoryStore(session);
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Configure session middleware
-  app.use(
-    session({
-      secret: "school-absence-system-secret",
-      resave: false,
-      saveUninitialized: false,
-      store: new MemoryStoreSession({
-        checkPeriod: 86400000 // Prune expired entries every 24h
-      }),
-      cookie: {
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        secure: process.env.NODE_ENV === "production",
-        httpOnly: true
-      }
-    })
-  );
+const absencesFilePath = path.resolve(__dirname, "data", "absences.json");
 
-  // Authentication middleware
-  const requireAuth = (req: Request, res: Response, next: Function) => {
-    if (!req.session.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+export class MemStorage {
+  private absences: Absence[] = [];
+
+  constructor() {
+    this.loadAbsences();
+  }
+
+  private async loadAbsences() {
+    try {
+      const data = await fs.readFile(absencesFilePath, "utf-8");
+      this.absences = JSON.parse(data);
+    } catch (error) {
+      console.error("Failed to load absences:", error);
+      this.absences = [];
+    }
+  }
+
+  private async saveAbsences() {
+    try {
+      await fs.writeFile(absencesFilePath, JSON.stringify(this.absences, null, 2));
+      console.log("Absences saved successfully.");
+    } catch (error) {
+      console.error("Failed to save absences:", error);
+    }
+  }
+
+  async createAbsence(absence: InsertAbsence): Promise<Absence> {
+    const id = this.absences.length + 1;
+    const teachers = Array.isArray(absence.teachers) ? absence.teachers : [];
+    const teacherName = teachers.join(", "); // Join multiple teachers with comma
+
+    const newAbsence: Absence = {
+      id,
+      studentId: absence.studentId,
+      studentName: absence.studentName,
+      studentClass: absence.studentClass,
+      profession: absence.profession,
+      phonePrivate: absence.phonePrivate || null,
+      phoneWork: absence.phoneWork || null,
+      educationType: absence.educationType || null,
+      signature: absence.signature || null,
+      teacherId: absence.teacherId,
+      teacherName: teacherName,
+      teachers: JSON.stringify(teachers), // Store teachers as JSON string
+      absenceType: absence.absenceType || "Krankheit",
+      dateStart: absence.absenceDate,
+      dateEnd: absence.absenceDate,
+      reason: absence.reason,
+      lessonCount: absence.lessonCount || "0",
+      location: absence.location || "",
+      submissionDate: new Date().toISOString(),
+      parentSignature: absence.parentSignature || false,
+      supervisorSignature: absence.supervisorSignature || false,
+      status: "pending",
+      processedDate: null
+    };
+    this.absences.push(newAbsence);
+    await this.saveAbsences();
+    return newAbsence;
+  }
+
+  // Weitere Methoden bleiben unverändert...
+}
+
+// Authentication middleware
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.user) {
+    return res.status(401).json({ message: "Nicht angemeldet" });
+  }
+  next();
+}
+
+function requireRole(role: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.session.user || req.session.user.role !== role) {
+      return res.status(403).json({ message: "Keine Berechtigung" });
     }
     next();
   };
+}
 
-  const requireRole = (role: string) => {
-    return (req: Request, res: Response, next: Function) => {
-      if (!req.session.user || req.session.user.role !== role) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      next();
-    };
-  };
+// Create API router
+const apiRouter = Router();
+
+export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  apiRouter.post("/auth/login", async (req: Request, res: Response) => {
     try {
       const { username, password, role } = loginSchema.parse(req.body);
       
-      let user = await storage.getUserByUsername(username);
-      
-      // Create user if they don't exist (for easy testing)
-      if (!user) {
-        const newUser = {
-          username,
-          password,
-          role,
-          name: role === "student" ? `Schüler ${username}` : `Lehrer ${username}`
-        };
-        
-        user = await storage.createUser(newUser);
-        console.log(`Created new user: ${username} with role: ${role}`);
-      } else if (user.role !== role) {
-        // If user exists but with a different role, update the role for testing
-        user.role = role;
-        console.log(`Updated user ${username} role to: ${role}`);
-      }
-      
-      // Set user in session (no password check for easy testing)
-      req.session.user = {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        role: role // Use the requested role
+      // Demo-Modus: Akzeptiere alle Anmeldedaten
+      const user = {
+        id: Math.floor(Math.random() * 1000) + 1,
+        username: username,
+        name: username,
+        role: role
       };
 
-      return res.status(200).json({
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        role: user.role
+      // Speichere Benutzer in der Session
+      req.session.user = user;
+      
+      // Warte auf das Session-Speichern
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
       });
+
+      console.log("Login successful:", { user, sessionID: req.sessionID });
+      return res.status(200).json(user);
+      
     } catch (error) {
+      console.error("Error during login:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ message: error.errors[0].message });
       }
-      throw error;
+      return res.status(500).json({ message: "Fehler bei der Anmeldung" });
     }
   });
 
-  app.post("/api/auth/logout", (req: Request, res: Response) => {
+  apiRouter.post("/auth/logout", (req: Request, res: Response) => {
     req.session.destroy((err) => {
       if (err) {
-        return res.status(500).json({ message: "Error during logout" });
+        console.error("Error destroying session:", err);
+        return res.status(500).json({ message: "Fehler beim Abmelden" });
       }
-      res.status(200).json({ message: "Logged out successfully" });
+      res.clearCookie("connect.sid");
+      res.status(200).json({ message: "Erfolgreich abgemeldet" });
     });
   });
 
-  app.get("/api/auth/me", (req: Request, res: Response) => {
-    if (!req.session.user) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  apiRouter.get("/auth/me", (req: Request, res: Response) => {
+    console.log("Session state:", {
+      sessionID: req.sessionID,
+      user: req.session?.user
+    });
     
-    return res.status(200).json(req.session.user);
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Nicht angemeldet" });
+    }
+    res.json(req.session.user);
   });
 
+  // Mount the API router
+  app.use("/api", apiRouter);
+
   // Absence routes
-  app.post("/api/absences", requireAuth, requireRole("student"), async (req: Request, res: Response) => {
+  app.post("/api/absences", async (req: Request, res: Response) => {
     try {
-      const absenceData = insertAbsenceSchema.parse(req.body);
-      const absence = await storage.createAbsence(absenceData);
-      
-      return res.status(201).json(absence);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return res.status(400).json({ message: error.errors[0].message });
+      // Validate request body against schema
+      const validatedData = insertAbsenceSchema.parse(req.body);
+
+      // Additional validation for required fields
+      if (!validatedData.lessonCount) {
+        throw new Error("Anzahl der Lektionen ist erforderlich");
       }
-      throw error;
+      if (!validatedData.location) {
+        throw new Error("Ort ist erforderlich");
+      }
+      if (!Array.isArray(validatedData.teachers) || validatedData.teachers.length === 0) {
+        throw new Error("Mindestens ein Lehrer muss ausgewählt werden");
+      }
+
+      console.log("Validated absence data:", validatedData); // Debug log
+
+      // Create the absence
+      const absence = await storage.createAbsence(validatedData);
+      
+      console.log("Created absence:", absence); // Debug log
+      
+      res.status(201).json(absence);
+    } catch (error) {
+      console.error("Error creating absence:", error);
+      
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          error: "Validation error",
+          details: error.errors,
+        });
+      } else {
+        res.status(400).json({
+          error: error instanceof Error ? error.message : "Unknown error occurred",
+        });
+      }
     }
   });
 

@@ -98,8 +98,15 @@ export function ContextMenu({
     return null;
   }
 
-  // Only show accept/reject options for pending absences
-  const isPending = absence.status === "pending";
+  // Neue Status-Auswahl für alle Entschuldigungen
+  const statusOptions = [
+    { value: "Aussenstehend", backendValue: "pending", label: "Aussenstehend", icon: <Clock className="h-4 w-4 mr-2" />, className: "bg-yellow-100 text-yellow-800" },
+    { value: "Dokument Anfordern", backendValue: "awaiting_docs", label: "Dokument anfordern", icon: <FileQuestion className="h-4 w-4 mr-2" />, className: "bg-blue-100 text-blue-800" },
+    { value: "In Prüfung", backendValue: "under_review", label: "In Prüfung", icon: <AlarmClock className="h-4 w-4 mr-2" />, className: "bg-purple-100 text-purple-800" },
+    { value: "Genehmigt", backendValue: "approved", label: "Genehmigen", icon: <CheckCircle className="h-4 w-4 mr-2" />, className: "bg-green-100 text-success" },
+    { value: "Abgelehnt", backendValue: "rejected", label: "Ablehnen", icon: <XCircle className="h-4 w-4 mr-2" />, className: "bg-red-100 text-error" },
+    { value: "Abgelaufen", backendValue: "expired", label: "Als abgelaufen markieren", icon: <TimerOff className="h-4 w-4 mr-2" />, className: "bg-gray-100 text-gray-800" },
+  ];
 
   const menuStyle = {
     top: `${position.y}px`,
@@ -123,63 +130,23 @@ export function ContextMenu({
           </button>
         </li>
         
-        {isPending && (
-          <>
-            <li className="py-1 px-2 text-xs font-semibold text-gray-500 bg-gray-50">
-              Status ändern
-            </li>
-            <li>
-              <button 
-                className="w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-light focus:outline-none flex items-center"
-                onClick={() => updateStatusMutation.mutate("approved")}
-                disabled={updateStatusMutation.isPending}
+        <>
+          <li className="py-1 px-2 text-xs font-semibold text-gray-500 bg-gray-50">
+            Status ändern
+          </li>
+          {statusOptions.map(option => (
+            <li key={option.value}>
+              <button
+                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-light focus:outline-none flex items-center rounded ${option.className} ${absence.status === option.value ? 'font-bold ring-2 ring-primary/40' : ''}`}
+                onClick={() => updateStatusMutation.mutate(option.backendValue)}
+                disabled={updateStatusMutation.isPending || absence.status === option.value}
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Genehmigen
+                {option.icon}
+                {option.label}
               </button>
             </li>
-            <li>
-              <button 
-                className="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-gray-light focus:outline-none flex items-center"
-                onClick={() => updateStatusMutation.mutate("rejected")}
-                disabled={updateStatusMutation.isPending}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Ablehnen
-              </button>
-            </li>
-            <li>
-              <button 
-                className="w-full text-left px-4 py-2 text-sm text-blue-700 hover:bg-gray-light focus:outline-none flex items-center"
-                onClick={() => updateStatusMutation.mutate("awaiting_docs")}
-                disabled={updateStatusMutation.isPending}
-              >
-                <FileQuestion className="h-4 w-4 mr-2" />
-                Dokumente anfordern
-              </button>
-            </li>
-            <li>
-              <button 
-                className="w-full text-left px-4 py-2 text-sm text-purple-700 hover:bg-gray-light focus:outline-none flex items-center"
-                onClick={() => updateStatusMutation.mutate("under_review")}
-                disabled={updateStatusMutation.isPending}
-              >
-                <AlarmClock className="h-4 w-4 mr-2" />
-                Zur Prüfung
-              </button>
-            </li>
-            <li>
-              <button 
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-light focus:outline-none flex items-center"
-                onClick={() => updateStatusMutation.mutate("expired")}
-                disabled={updateStatusMutation.isPending}
-              >
-                <TimerOff className="h-4 w-4 mr-2" />
-                Als abgelaufen markieren
-              </button>
-            </li>
-          </>
-        )}
+          ))}
+        </>
       </ul>
     </div>
   );

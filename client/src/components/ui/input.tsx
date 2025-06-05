@@ -12,6 +12,18 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        onKeyDown={(e) => {
+          // Ensure event bubbling for key events
+          if (props.onKeyDown) {
+            props.onKeyDown(e);
+          }
+        }}
+        onChange={(e) => {
+          // Ensure event bubbling for change events
+          if (props.onChange) {
+            props.onChange(e);
+          }
+        }}
         {...props}
       />
     )

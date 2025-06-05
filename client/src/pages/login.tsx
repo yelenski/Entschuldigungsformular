@@ -1,13 +1,13 @@
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import React, { useEffect } from "react";
 import { useLocation } from "wouter";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Card,
   CardContent,
@@ -15,160 +15,193 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-const formSchema = z.object({
-  username: z.string().min(1, "Benutzername ist erforderlich"),
-  password: z.string().min(1, "Passwort ist erforderlich"),
-  role: z.enum(["student", "teacher"], {
-    required_error: "Bitte wählen Sie eine Rolle",
-  }),
-});
-
-type FormData = z.infer<typeof formSchema>;
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Login() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  const { login } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isAuthenticated, user } = useAuth();
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [role, setRole] = React.useState("student");
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      role: "student",
-    },
-  });
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const redirectPath = user.role === "student" ? "/student/form" : "/teacher/overview";
+      setLocation(redirectPath);
+    }
+  }, [isAuthenticated, user, setLocation]);
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: FormData) => {
+  const { mutate: submitLogin, isPending } = useMutation({
+    mutationFn: async (data: { username: string; password: string; role: string }) => {
       const response = await apiRequest("POST", "/api/auth/login", data);
-      const user = await response.json();
-      return user;
+      return await response.json();
     },
     onSuccess: (data) => {
       login(data);
-      // Redirect based on role
-      if (data.role === "student") {
-        setLocation("/student/form");
-      } else {
-        setLocation("/teacher/overview");
-      }
+      toast({
+        title: "Erfolgreich angemeldet",
+        description: `Willkommen zurück, ${data.name}!`,
+      });
     },
     onError: (error: Error) => {
       toast({
         title: "Anmeldung fehlgeschlagen",
-        description: error.message || "Bitte überprüfen Sie Ihre Anmeldedaten",
+        description: error.message,
         variant: "destructive",
       });
-    },
-    onSettled: () => {
-      setIsLoading(false);
-    },
+    }
   });
 
-  function onSubmit(data: FormData) {
-    setIsLoading(true);
-    loginMutation.mutate(data);
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username || !password) {
+      toast({
+        title: "Fehlende Eingaben",
+        description: "Bitte füllen Sie alle Felder aus",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      toast({
+        title: "Ungültiges Passwort",
+        description: "Das Passwort muss mindestens 6 Zeichen lang sein",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      toast({
+        title: "Ungültiges Passwort",
+        description: "Das Passwort muss mindestens einen Großbuchstaben enthalten",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/[a-z]/.test(password)) {
+      toast({
+        title: "Ungültiges Passwort",
+        description: "Das Passwort muss mindestens einen Kleinbuchstaben enthalten",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      toast({
+        title: "Ungültiges Passwort",
+        description: "Das Passwort muss mindestens ein Sonderzeichen enthalten",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    submitLogin({ username, password, role });
+  };
+
+  const passwordRequirements = [
+    "Mindestens 6 Zeichen",
+    "Mindestens ein Großbuchstabe",
+    "Mindestens ein Kleinbuchstabe",
+    "Mindestens ein Sonderzeichen"
+  ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-primary mb-2">
-            Schulentschuldigungssystem
-          </CardTitle>
-          <CardDescription>
-            Bitte melden Sie sich an, um fortzufahren
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Anmeldung</CardTitle>
+          <CardDescription className="text-center">
+            Melden Sie sich an, um fortzufahren
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Benutzername</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Benutzername eingeben" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Rolle</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <RadioGroup value={role} onValueChange={setRole} className="flex space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="student" id="student" />
+                        <Label htmlFor="student">Schüler</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="teacher" id="teacher" />
+                        <Label htmlFor="teacher">Lehrer</Label>
+                      </div>
+                    </RadioGroup>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Wählen Sie Ihre Rolle aus</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="username">Benutzername</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <input
+                      id="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Benutzername"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Geben Sie Ihren Benutzernamen ein</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Passwort</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Passwort eingeben"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="space-y-2">
+              <Label htmlFor="password">Passwort</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                      placeholder="********"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="space-y-1">
+                      <p>Passwort-Anforderungen:</p>
+                      <ul className="list-disc list-inside text-sm">
+                        {passwordRequirements.map((req) => (
+                          <li key={req}>{req}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
 
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex items-center space-x-4"
-                      >
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="student" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Schüler</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="teacher" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Lehrer</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Anmeldung..." : "Anmelden"}
-              </Button>
-            </form>
-          </Form>
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? "Anmeldung..." : "Anmelden"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

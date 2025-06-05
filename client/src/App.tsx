@@ -6,13 +6,26 @@ import Login from "@/pages/login";
 import StudentForm from "@/pages/student-form";
 import TeacherOverview from "@/pages/teacher-overview";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Login} />
-      <Route path="/student/form" component={StudentForm} />
-      <Route path="/teacher/overview" component={TeacherOverview} />
+      <Route path="/student/form">
+        {() => (
+          <ProtectedRoute roles={["student"]}>
+            <StudentForm />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/teacher/overview">
+        {() => (
+          <ProtectedRoute roles={["teacher"]}>
+            <TeacherOverview />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

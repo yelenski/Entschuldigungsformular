@@ -34,9 +34,14 @@ export function Header({ title }: HeaderProps) {
         <h1 className="text-xl font-semibold text-primary">{title}</h1>
         <div className="flex items-center space-x-4">
           {user && (
-            <span className="text-sm font-medium text-gray-700">
-              {user.name}
-            </span>
+            <div>
+              <span className="text-sm font-medium text-gray-700">
+                {user.username}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {user.role === "teacher" ? "Lehrer" : "Schüler"}
+              </p>
+            </div>
           )}
           <Button 
             variant="ghost" 

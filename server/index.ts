@@ -36,6 +36,11 @@ app.use(session({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.use(cors({
+  origin: "https://entschuldigungsformular.netlify.app",
+  credentials: true
+}));
+
 app.use("/login", loginRouter);
 
 // Session debug middleware

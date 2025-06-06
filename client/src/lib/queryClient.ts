@@ -47,6 +47,10 @@ export const getQueryFn: <T>(options: {
 
     const res = await fetch(apiUrl, {
       credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+      mode: "cors",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

@@ -100,7 +100,7 @@ export type InsertAbsence = z.infer<typeof insertAbsenceSchema>;
 // Schemas for API requests
 export const loginSchema = z.object({
   username: z.string().min(1, "Benutzername ist erforderlich"),
-  password: z.string(), // Akzeptiere jedes Passwort
+  password: z.string().regex(/^[a-zA-Z]{5,}$/, "Passwort muss mindestens 5 Buchstaben enthalten und darf nur Groß- und Kleinbuchstaben enthalten"),
   role: z.enum(["student", "teacher"], {
     required_error: "Bitte wählen Sie eine Rolle (Schüler oder Lehrer)"
   }),

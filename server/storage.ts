@@ -59,13 +59,13 @@ export class MemStorage implements IStorage {
     const sampleUsers: InsertUser[] = [
       {
         username: "student",
-        password: "password",
+        password: "SchuelerPass",
         role: "student",
         name: "Max Mustermann"
       },
       {
         username: "teacher",
-        password: "password",
+        password: "LehrerPass",
         role: "teacher",
         name: "Frau Müller"
       }

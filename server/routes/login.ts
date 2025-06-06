@@ -5,7 +5,7 @@ const router = Router();
 router.post("/", (req, res) => {
   const { username, password, role } = req.body;
 
-  if (!password || !/^[a-zA-Z0-9]{5,}$/.test(password)) {
+  if (!password || !/^[a-zA-Z]{5,}$/.test(password)) {
     return res.status(401).json({ error: "Ungültiges Passwort" });
   }
 

@@ -37,7 +37,7 @@ describe('Login Tests', () => {
     
     // Benutzername und Passwort eingeben
     cy.get('input[placeholder="Benutzername"]').type('schueler');
-    cy.get('input[placeholder="********"]').type('SchPass123!');
+    cy.get('input[placeholder="********"]').type('SchuelerPass');
     
     // Submit Button finden und klicken
     cy.get('button[type="submit"]').should('be.visible').not('disabled').click();
@@ -60,7 +60,7 @@ describe('Login Tests', () => {
     
     // Anmeldedaten eingeben
     cy.get('input[placeholder="Benutzername"]').should('be.visible').type('lehrer');
-    cy.get('input[placeholder="********"]').should('be.visible').type('LehrerPass123!');
+    cy.get('input[placeholder="********"]').should('be.visible').type('LehrerPass');
     
     // Submit Button finden und klicken
     cy.get('button[type="submit"]').should('be.visible').not('disabled').click();
@@ -94,7 +94,7 @@ describe('Login und Logout Tests', () => {
     
     // Anmeldedaten eingeben
     cy.get('input[placeholder="Benutzername"]').should('be.visible').type('schueler');
-    cy.get('input[placeholder="********"]').should('be.visible').type('SchPass123!');
+    cy.get('input[placeholder="********"]').should('be.visible').type('SchuelerPass');
     
     // Submit Button finden und klicken
     cy.get('button[type="submit"]').should('be.visible').not('disabled').click();
@@ -129,7 +129,7 @@ describe('Login und Logout Tests', () => {
     
     // Anmeldedaten eingeben
     cy.get('input[placeholder="Benutzername"]').should('be.visible').clear().type('lehrer');
-    cy.get('input[placeholder="********"]').should('be.visible').clear().type('LehrerPass123!');
+    cy.get('input[placeholder="********"]').should('be.visible').clear().type('LehrerPass');
     
     // Submit Button finden und klicken
     cy.get('button[type="submit"]').should('be.visible').not('disabled').click();

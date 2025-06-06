@@ -3,8 +3,10 @@ import cors from "cors";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import loginRouter from "./routes/login";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./storage";
 import { setupVite, serveStatic, log } from "./vite";
+import fs from "fs/promises";
+import path from "path";
 
 const app = express();
 const MemoryStoreSession = MemoryStore(session);
@@ -46,6 +48,22 @@ app.use(express.urlencoded({ extended: false }));
 
 // Routen
 app.use("/login", loginRouter);
+
+// Absenzen-API bereitstellen
+app.get("/api/absences", async (req, res) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ message: "Nicht eingeloggt" });
+  }
+
+  try {
+    const filePath = path.resolve("server", "data", "absences.json");
+    const rawData = await fs.readFile(filePath, "utf-8");
+    const absences = JSON.parse(rawData);
+    res.json(absences);
+  } catch (err) {
+    res.status(500).json({ message: "Fehler beim Laden der Absenzen" });
+  }
+});
 
 // Session-Debug-Logging
 app.use((req, res, next) => {
@@ -89,6 +107,7 @@ app.use((req, res, next) => {
   next();
 });
 
+// Weitere API-Routen registrieren
 (async () => {
   const server = await registerRoutes(app);
 

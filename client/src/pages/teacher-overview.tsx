@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -129,7 +129,7 @@ export default function TeacherOverview() {
                     isLoading={isLoading}
                     onAbsenceClick={handleAbsenceClick}
                     onContextMenu={handleContextMenu}
-                    type="bearbeitung"
+                    type="pending"
                   />
                 </TabsContent>
 

@@ -50,7 +50,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Routen
-app.use("/login", loginRouter);
+app.use("/api/auth", loginRouter);
 
 // Absenzen-API bereitstellen
 app.get("/api/absences", async (req, res) => {

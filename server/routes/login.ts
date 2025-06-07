@@ -13,9 +13,20 @@ router.post("/", (req, res) => {
     return res.status(400).json({ error: "Ungültige Rolle" });
   }
 
+  // Session setzen
+  req.session.user = {
+    id: Math.floor(Math.random() * 10000),
+    username: username,
+    name: username || (role === "student" ? "Schüler" : "Lehrer"),
+    role: role
+  };
+
+  // Test-Cookie setzen
+  res.cookie('testcookie', 'test', { secure: true, httpOnly: true, sameSite: 'none' });
+
   res.json({
-    name: username || role === "student" ? "Schüler" : "Lehrer",
-    role,
+    name: req.session.user.name,
+    role: req.session.user.role,
   });
 });
 

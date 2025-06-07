@@ -1,4 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
+
+const app = express();
+app.set("trust proxy", 1); // Muss GANZ OBEN stehen!
+
 import cors from "cors";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -8,8 +12,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import fs from "fs/promises";
 import path from "path";
 
-const app = express();
-app.set("trust proxy", 1); // Damit Express hinter Proxy (Render) HTTPS erkennt
 const MemoryStoreSession = MemoryStore(session);
 
 // CORS-Konfiguration für Zugriff von Netlify

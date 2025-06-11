@@ -1,6 +1,8 @@
 // client/src/lib/api.ts
 
 export async function apiRequest(method: string, url: string, data?: unknown): Promise<Response> {
+
+  // Ensure the URL starts with a slash for consistency
   const BASE_URL = import.meta.env.VITE_API_URL;
   const apiUrl = BASE_URL + (url.startsWith('/') ? url : '/' + url);
 

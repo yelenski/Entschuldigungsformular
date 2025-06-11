@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Hier die URL 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
 type UnauthorizedBehavior = "returnNull" | "throw";

@@ -5,4 +5,4 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  included_files = ["server/app.js", "server/data/absences.json"]
+  included_files = ["server/app.cjs", "server/data/absences.json"]

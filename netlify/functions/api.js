@@ -1,4 +1,9 @@
 const serverless = require('serverless-http');
+const express = require('express');
 const app = require('../../server/app.cjs');
 
-exports.handler = serverless(app);
+// Wrapper-App, die alles unter /api mountet
+const handlerApp = express();
+handlerApp.use('/api', app);
+
+exports.handler = serverless(handlerApp);

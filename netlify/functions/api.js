@@ -1,4 +1,4 @@
-const serverlessExpress = require('netlify-express');
-const app = require('../../server/app'); // Passe den Pfad ggf. an
+const serverless = require('serverless-http');
+const app = require('../../server/app');
 
-exports.handler = serverlessExpress({ app });
+exports.handler = serverless(app);

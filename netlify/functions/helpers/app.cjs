@@ -3,6 +3,8 @@ const loginRouter = require('./routes/login.cjs');
 
 const app = express();
 
+const filePath = path.resolve(__dirname, "data", "absences.json");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

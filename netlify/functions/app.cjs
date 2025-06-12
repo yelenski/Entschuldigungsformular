@@ -4,7 +4,7 @@ const session = require('express-session');
 const MemoryStore = require('memorystore')(session);
 const fs = require('fs/promises');
 const path = require('path');
-const loginRouter = require('../../server/routes/login').default || require('../../server/routes/login');
+const loginRouter = require('./routes/login').default || require('./routes/login');
 
 const app = express();
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// Beispiel-Login-Route (du kannst sie anpassen)
+// Beispiel-Login-Route
 router.post('/', (req, res) => {
   const { username, password } = req.body;
   if (username && password) {

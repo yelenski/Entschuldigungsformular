@@ -1,8 +1,8 @@
 [build]
-  command = "npm run build"
-  publish = "dist/public"
+functions = "netlify/functions"
+publish = "dist/public"
+command = "npm run build"
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  included_files = ["server/app.cjs", "server/data/absences.json"]
+[dev]
+command = "npm run dev"
+targetPort = 3000

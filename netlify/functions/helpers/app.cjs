@@ -6,6 +6,17 @@ const loginRouter = require('./routes/login.cjs');
 
 const app = express();
 
+// CORS Middleware
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 const filePath = path.resolve(__dirname, "data", "absences.json");
 
 app.use(express.json());

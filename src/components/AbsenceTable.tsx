@@ -24,12 +24,15 @@ export function AbsenceTable({
     console.log("AbsenceTable - Current absences:", absences);
   }, [absences]);
 
+  // Defensive: absences immer als Array behandeln
+  const safeAbsences = Array.isArray(absences) ? absences : [];
+
   if (isLoading) {
     return <LoadingState />;
   }
 
   // Validate absences data
-  const validAbsences = absences.filter(absence => {
+  const validAbsences = safeAbsences.filter(absence => {
     if (!absence.studentClass) {
       console.warn("Found absence without studentClass:", absence);
       return false;

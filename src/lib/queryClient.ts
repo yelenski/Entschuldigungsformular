@@ -211,7 +211,20 @@ export async function apiRequest(
       const { id, ...updateFields } = data as any;
       const idx = testAbsences.findIndex(a => a.id === id);
       if (idx !== -1) {
-        testAbsences[idx] = { ...testAbsences[idx], ...updateFields };
+        // Nur erlaubte Status speichern
+        const allowedStatus = [
+          "pending", "awaiting_docs", "under_review", "approved", "rejected", "expired"
+        ];
+        let newStatus = updateFields.status;
+        if (newStatus && !allowedStatus.includes(newStatus)) {
+          // Ungültiger Status, alten Status beibehalten
+          newStatus = testAbsences[idx].status;
+        }
+        testAbsences[idx] = {
+          ...testAbsences[idx],
+          ...updateFields,
+          ...(newStatus ? { status: newStatus } : {})
+        };
         return new Response(JSON.stringify(testAbsences[idx]), {
           status: 200,
           headers: { 'Content-Type': 'application/json' }

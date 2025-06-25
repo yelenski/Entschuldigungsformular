@@ -34,13 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null); // oder hier einen Dummy-User setzen, falls gewünscht
   }, []);
   
-  useEffect(() => {
-    if (data) {
-      setUser(data);
-    } else {
-      setUser(null);
-    }
-  }, [data]);
+  // useEffect mit [data] entfernt, da kein Backend/Query mehr genutzt wird
 
   const login = (userData: User) => {
     setUser(userData);

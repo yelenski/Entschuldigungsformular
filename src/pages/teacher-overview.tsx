@@ -90,7 +90,7 @@ export default function TeacherOverview() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header title="Übersicht Entschuldigungen" />
+      <Header title="Übersicht Entschuldigungen" onRefresh={refetch} />
       
       <main className="flex-grow py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

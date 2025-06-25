@@ -28,26 +28,11 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   
-  const { data, isLoading, refetch } = useQuery<User | null>({
-    queryKey: ['/api/auth/me'],
-    queryFn: async () => {
-      try {
-        const response = await apiRequest("GET", '/api/auth/me');
-        const userData = await response.json();
-        return userData as User;
-      } catch (error) {
-        if (error instanceof Error && error.message.includes("401")) {
-          return null;
-        }
-        throw error;
-      }
-    },
-    retry: false,
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 0
-  });
+  // Dummy-User für reines Frontend ohne Backend
+  const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    setUser(null); // oder hier einen Dummy-User setzen, falls gewünscht
+  }, []);
   
   useEffect(() => {
     if (data) {
@@ -62,13 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    try {
-      await apiRequest("POST", '/api/auth/logout');
-      setUser(null);
-
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
+    setUser(null);
   };
 
   const value = {

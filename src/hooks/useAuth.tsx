@@ -36,8 +36,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   // useEffect mit [data] entfernt, da kein Backend/Query mehr genutzt wird
 
-  const login = (userData: User) => {
-    setUser(userData);
+  const login = (userData?: User) => {
+    setUser(
+      userData || {
+        id: 1,
+        username: "testuser",
+        name: "Test User",
+        role: "student", // oder "teacher"
+      }
+    );
   };
 
   const logout = async () => {

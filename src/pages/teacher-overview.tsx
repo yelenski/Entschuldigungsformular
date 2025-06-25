@@ -25,8 +25,7 @@ export default function TeacherOverview() {
     queryFn: async () => {
       const response = await apiRequest("GET", "/absences");
       return await response.json();
-    },
-    refetchInterval: 3000 // Refetch data every 3 seconds
+    }
   });
 
   // Mapping Backend-Status zu deutschen Status

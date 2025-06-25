@@ -18,6 +18,9 @@ Die SchoolAbsence App / Entschuldigungsformular ist eine moderne Webanwendung zu
   - Einsicht in den aktuellen Status ihrer Absenzmeldungen
   - Benachrichtigungen bei Statusänderungen
 
+
+
+
 #### Für Lehrer
 - **Absenzübersicht:**
   - Gesamtübersicht aller Absenzmeldungen

@@ -191,6 +191,19 @@ export async function apiRequest(
   data?: unknown,
 ): Promise<Response> {
   if (url.includes("absences")) {
+    if (method === "POST") {
+      // Neuen Eintrag hinzufügen (id generieren)
+      const newAbsence = {
+        id: testAbsences.length > 0 ? Math.max(...testAbsences.map(a => a.id)) + 1 : 1,
+        ...data as object
+      };
+      testAbsences.push(newAbsence);
+      return new Response(JSON.stringify(newAbsence), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    // GET: Liste zurückgeben
     return new Response(JSON.stringify(testAbsences), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

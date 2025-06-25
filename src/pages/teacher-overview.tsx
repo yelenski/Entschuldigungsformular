@@ -41,7 +41,8 @@ export default function TeacherOverview() {
       default: return status;
     }
   }
-  const mappedAbsences = allAbsences?.map(absence => ({ ...absence, status: mapStatusToGerman(absence.status) })) ?? [];
+  const safeAbsences = Array.isArray(allAbsences) ? allAbsences : [];
+  const mappedAbsences = safeAbsences.map(absence => ({ ...absence, status: mapStatusToGerman(absence.status) }));
 
   // Einfache Tab-Filterung: Jeder Eintrag nur nach gemapptem Status
   const exklusiveOffene = mappedAbsences.filter(absence => absence.status === 'Aussenstehend');

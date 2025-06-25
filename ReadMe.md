@@ -21,6 +21,8 @@ Die SchoolAbsence App / Entschuldigungsformular ist eine moderne Webanwendung zu
 
 
 
+
+
 #### Für Lehrer
 - **Absenzübersicht:**
   - Gesamtübersicht aller Absenzmeldungen
@@ -223,4 +225,3 @@ npm start
 ## Lizenz
 
 MIT License
-

@@ -50,10 +50,16 @@ const response = await apiRequest("POST", "/api/auth/login", data);
 },
     
     onSuccess: (data) => {
-      login(data);
+      // Dummy-User für Frontend-Only: Rolle aus dem Formular verwenden
+      login({
+        id: 1,
+        username,
+        name: username || (role === "teacher" ? "Lehrer" : "Schüler"),
+        role,
+      });
       toast({
         title: "Erfolgreich angemeldet",
-        description: `Willkommen zurück, ${data.name}!`,
+        description: `Willkommen zurück, ${username || (role === "teacher" ? "Lehrer" : "Schüler" )}!`,
       });
     },
     onError: (error: Error) => {

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
-  base: '/Entschuldigungsformular/', // REPO-NAME mit Slash am Anfang und Ende!
+  base: '/',
   root: "client",
   plugins: [react()],
   resolve: {
@@ -25,7 +25,7 @@ export default defineConfig({
   //   },
   // },
   build: {
-    outDir: resolve(__dirname, "dist/public"),
+    outDir: resolve(__dirname, "dist"),
     emptyOutDir: true,
   },
 });

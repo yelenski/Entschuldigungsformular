@@ -1,8 +1,35 @@
+# Node modules
 node_modules
+
+# Build output
 dist
+dist/
+build
+build/
+
+# System files
 .DS_Store
-server/public
+
+# Vite config cache
 vite.config.ts.*
 *.tar.gz
-# Local Netlify folder
+
+# Local Netlify folder (nicht für GitHub Pages nötig)
 .netlify
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE/Editor folders
+.vscode
+.idea
+
+# OS generated files
+Thumbs.db

@@ -87,9 +87,23 @@ export default function TeacherOverview() {
     closeDetails();
   };
 
+  // Handler für Refresh-Button mit Logging
+  const handleRefresh = async () => {
+    try {
+      const result = await refetch();
+      if (result.status === 'success') {
+        console.log('Refresh erfolgreich:', result.data);
+      } else {
+        console.log('Refresh fehlgeschlagen:', result);
+      }
+    } catch (err) {
+      console.error('Fehler beim Refresh:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header title="Übersicht Entschuldigungen" onRefresh={refetch} />
+      <Header title="Übersicht Entschuldigungen" onRefresh={handleRefresh} />
       
       <main className="flex-grow py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

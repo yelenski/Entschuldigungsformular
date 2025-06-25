@@ -193,8 +193,11 @@ export async function apiRequest(
   if (url.includes("absences")) {
     if (method === "POST") {
       // Neuen Eintrag hinzufügen (id generieren)
+      const now = new Date().toISOString();
       const newAbsence = {
         id: testAbsences.length > 0 ? Math.max(...testAbsences.map(a => a.id)) + 1 : 1,
+        submissionDate: (data && (data as any).submissionDate) ? (data as any).submissionDate : now,
+        status: (data && (data as any).status) ? (data as any).status : "pending",
         ...data as object
       };
       testAbsences.push(newAbsence);
@@ -202,6 +205,23 @@ export async function apiRequest(
         status: 201,
         headers: { 'Content-Type': 'application/json' }
       });
+    }
+    if (method === "PATCH" || method === "PUT") {
+      // Eintrag aktualisieren (z.B. Status ändern)
+      const { id, ...updateFields } = data as any;
+      const idx = testAbsences.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        testAbsences[idx] = { ...testAbsences[idx], ...updateFields };
+        return new Response(JSON.stringify(testAbsences[idx]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } else {
+        return new Response(JSON.stringify({ error: 'Absence not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
     }
     // GET: Liste zurückgeben
     return new Response(JSON.stringify(testAbsences), {

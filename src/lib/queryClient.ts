@@ -12,30 +12,21 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Dummy-API für reines Frontend ohne Backend
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown,
 ): Promise<Response> {
-  const apiUrl = BASE_URL + (url.startsWith('/api') ? url : `/api${url.startsWith('/') ? url : '/' + url}`);
-
-  const res = await fetch(apiUrl, {
+  return new Response(JSON.stringify({
+    error: 'Kein Backend vorhanden. API-Aufruf wurde abgefangen.',
     method,
-    headers: {
-      ...(data ? { "Content-Type": "application/json" } : {}),
-      Accept: "application/json",
-    },
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-    mode: "cors",
+    url,
+    data
+  }), {
+    status: 501,
+    headers: { 'Content-Type': 'application/json' }
   });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || `${res.status}: ${res.statusText}`);
-  }
-
-  return res;
 }
 
 export const getQueryFn: <T>(options: {
@@ -43,23 +34,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const relativeUrl = queryKey[0] as string;
-    const apiUrl = BASE_URL + (relativeUrl.startsWith('/api') ? relativeUrl : `/api${relativeUrl.startsWith('/') ? relativeUrl : '/' + relativeUrl}`);
-
-    const res = await fetch(apiUrl, {
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-      },
-      mode: "cors",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-    return await res.json();
+    // Dummy-QueryFn für reines Frontend ohne Backend
+    return {
+      error: 'Kein Backend vorhanden. Query wurde abgefangen.',
+      queryKey
+    } as any;
   };
 
 export const queryClient = new QueryClient({

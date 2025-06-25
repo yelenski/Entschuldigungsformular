@@ -1,4 +1,16 @@
-import { Absence } from "@shared/schema";
+// Lokale Definition für reines Frontend
+interface Absence {
+  id: number;
+  studentName: string;
+  studentClass: string;
+  educationType?: string;
+  reason?: string;
+  dateStart: string;
+  dateEnd: string;
+  status: string;
+  submissionDate: string;
+  processedDate?: string;
+}
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "./StatusBadge";

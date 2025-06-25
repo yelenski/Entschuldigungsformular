@@ -2,8 +2,8 @@
 
 // Dummy-API für reines Frontend ohne Backend
 export async function apiRequest(method: string, url: string, data?: unknown): Promise<Response> {
-  // Für GET auf /api/absences gib ein leeres Array zurück
-  if (method === "GET" && url.includes("/api/absences")) {
+  // Für GET auf alle URLs mit "absences" gib ein leeres Array zurück
+  if (method === "GET" && url.includes("absences")) {
     return new Response(JSON.stringify([]), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

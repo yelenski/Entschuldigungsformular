@@ -107,11 +107,18 @@ app.patch("/absences/:id/status", requireAuth, requireRole("teacher"), async (re
     const id = parseInt(req.params.id, 10);
     const absence = absences.find(a => a.id === id);
     if (!absence) return res.status(404).json({ message: "Absenz nicht gefunden" });
+    console.log('[PATCH /absences/:id/status]', {
+      id,
+      oldStatus: absence.status,
+      newStatus: req.body.status,
+      body: req.body
+    });
     absence.status = req.body.status || absence.status;
     absence.processedDate = req.body.processedDate || absence.processedDate;
     await fs.writeFile(filePath, JSON.stringify(absences, null, 2));
     res.json(absence);
   } catch (err) {
+    console.error('[PATCH /absences/:id/status] Fehler:', err);
     res.status(500).json({ message: "Fehler beim Aktualisieren der Absenz" });
   }
 });

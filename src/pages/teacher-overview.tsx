@@ -25,7 +25,9 @@ export default function TeacherOverview() {
     queryFn: async () => {
       const response = await apiRequest("GET", "/absences");
       return await response.json();
-    }
+    },
+    staleTime: 0,
+    cacheTime: 0,
   });
 
   // Mapping Backend-Status zu deutschen Status

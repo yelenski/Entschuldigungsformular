@@ -70,15 +70,18 @@ export function AbsenceDetails({
     return null;
   }
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('de-DE', {
+  const formatDate = (date?: string) => {
+    if (!date) return "-";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "-";
+    return d.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
     });
   };
 
-  const handleUpdateStatus = (status: "completed" | "rejected") => {
+  const handleUpdateStatus = (status: "approved" | "rejected") => {
     setIsUpdating(true);
     updateStatusMutation.mutate(status);
   };
@@ -190,7 +193,7 @@ export function AbsenceDetails({
                 Ablehnen
               </Button>
               <Button
-                onClick={() => handleUpdateStatus("completed")}
+                onClick={() => handleUpdateStatus("approved")}
                 disabled={isUpdating}
               >
                 Akzeptieren

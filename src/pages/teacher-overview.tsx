@@ -65,6 +65,7 @@ export default function TeacherOverview() {
 
   const handleContextMenu = (e: React.MouseEvent, absence: Absence) => {
     e.preventDefault();
+    console.log('ContextMenu geöffnet für Entschuldigung:', absence);
     setSelectedAbsence(absence);
     setIsContextMenuOpen(true);
     setContextMenuPosition({ x: e.pageX, y: e.pageY });

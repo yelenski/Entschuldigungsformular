@@ -1,29 +1,17 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// @ts-ignore
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3000'
-    }
-  }
-})
-export default defineConfig({
-  base: '/',
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": "/src",
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        // @ts-ignore
+        rewrite: (path: string) => path.replace(/^\/api/, ''),
+      },
     },
-  },
-  build: {
-    outDir: "dist",
-    emptyOutDir: true,
-  },
-  server: {
-    historyApiFallback: true,
   },
 });

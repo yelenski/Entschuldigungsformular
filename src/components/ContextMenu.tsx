@@ -138,7 +138,10 @@ export function ContextMenu({
             <li key={option.value}>
               <button
                 className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-light focus:outline-none flex items-center rounded ${option.className} ${absence.status === option.backendValue ? 'font-bold ring-2 ring-primary/40' : ''}`}
-                onClick={() => updateStatusMutation.mutate(option.backendValue)}
+                onClick={() => {
+                  console.log('Status-Button geklickt:', option.backendValue, absence);
+                  updateStatusMutation.mutate(option.backendValue);
+                }}
                 disabled={updateStatusMutation.isPending || absence.status === option.backendValue}
               >
                 {option.icon}

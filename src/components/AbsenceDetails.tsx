@@ -83,14 +83,8 @@ export function AbsenceDetails({
     });
   };
 
-<<<<<<< HEAD:src/components/AbsenceDetails.tsx
-  const handleUpdateStatus = (status: "approved" | "rejected") => {
-    setIsUpdating(true);
-    updateStatusMutation.mutate(status);
-=======
   const handleStatusChange = (value: string) => {
     setSelectedStatus(value);
->>>>>>> fb100b4 (Mein finaler Stand):client/src/components/AbsenceDetails.tsx
   };
 
   const handleUpdateStatusSmart = () => {
@@ -235,17 +229,7 @@ export function AbsenceDetails({
                 onClick={handleUpdateStatusSmart}
                 disabled={isUpdating || !selectedStatus}
               >
-<<<<<<< HEAD:src/components/AbsenceDetails.tsx
-                Ablehnen
-              </Button>
-              <Button
-                onClick={() => handleUpdateStatus("approved")}
-                disabled={isUpdating}
-              >
-                Akzeptieren
-=======
                 Status ändern
->>>>>>> fb100b4 (Mein finaler Stand):client/src/components/AbsenceDetails.tsx
               </Button>
             </div>
           )}

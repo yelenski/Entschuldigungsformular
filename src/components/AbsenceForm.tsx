@@ -1,671 +1,288 @@
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { getFormattedDate } from "@/lib/utils";
-import { useRef, useEffect, useState } from "react";
-
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { getDropdownOptions } from "@/lib/dropdowns";
-
-// Extend the form schema with validation
-const formSchema = z.object({
-  firstName: z.string().min(1, "Vorname ist erforderlich"),
-  lastName: z.string().min(1, "Name ist erforderlich"),
-  studentClass: z.string({
-    required_error: "Bitte Klasse auswählen",
-  }),
-  profession: z.string({
-    required_error: "Bitte Beruf auswählen",
-  }),
-  phonePrivate: z.string().optional(),
-  phoneWork: z.string().optional(),
-  educationType: z.enum(["BS", "BM"], {
-    required_error: "Bitte Schultyp auswählen",
-  }),
-  teachers: z.array(z.string()).min(1, "Mindestens ein Lehrer muss ausgewählt werden"),
-  absenceDate: z.string({
-    required_error: "Bitte Absenzdatum angeben",
-  }),
-  lessonCount: z.string().min(1, "Anzahl der Lektionen ist erforderlich"),
-  reason: z.string().min(5, "Die Begründung muss mindestens 5 Zeichen enthalten"),
-  location: z.string().min(1, "Ort ist erforderlich"),
-  date: z.string().min(1, "Datum ist erforderlich"),
-  signature: z.string().optional(),
-  isLegal: z.boolean().optional(),
-  parentSignature: z.boolean().optional(),
-  supervisorSignature: z.boolean().optional(),
-  confirmTruth: z.boolean().refine(val => val === true, {
-    message: "Sie müssen bestätigen, dass alle Angaben wahrheitsgemäß sind",
-  }),
-});
-
-type FormData = z.infer<typeof formSchema>;
+import { getFormattedDate } from "@/lib/utils";
+import React, { useRef } from "react";
+import { apiRequest } from "@/lib/queryClient";
 
 export function AbsenceForm() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Fetch dropdown options
-  const { data: dropdowns, isLoading: isLoadingDropdowns } = useQuery({
-    queryKey: ['/api/dropdowns'],
-    select: (data) => getDropdownOptions(data),
+  const defaultValues = {
+    firstName: "",
+    lastName: "",
+    studentClass: "",
+    profession: "",
+    phonePrivate: "",
+    phoneWork: "",
+    educationType: "BS",
+    teachers: [],
+    absenceDate: "",
+    lessonCount: "",
+    reason: "",
+    location: "",
+    date: getFormattedDate(new Date()),
+    signature: "",
+    isLegal: false,
+    parentSignature: false,
+    supervisorSignature: false,
+    confirmTruth: false,
+  };
+
+  const form = useForm({
+    defaultValues,
   });
 
-  // Signatur Canvas ref
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      studentClass: "",
-      profession: "",
-      phonePrivate: "",
-      phoneWork: "",
-      educationType: "BS",
-      teachers: [],
-      absenceDate: "",
-      lessonCount: "",
-      reason: "",
-      location: "",
-      date: getFormattedDate(new Date()),
-      signature: "",
-      isLegal: false,
-      parentSignature: false,
-      supervisorSignature: false,
-      confirmTruth: false,
-    },
-  });
+  const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = React.useState(false);
+  const [teachersSelected, setTeachersSelected] = React.useState<string[]>([]);
 
-  // Canvas initialisieren
-  useEffect(() => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#000';
-      }
-    }
-  }, [canvasRef]);
-
+  // Canvas-Logik für Unterschrift
+  function startDrawing(e: React.PointerEvent<HTMLCanvasElement>) {
+    setIsDrawing(true);
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+  }
+  function draw(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (!isDrawing) return;
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+    ctx.stroke();
+  }
+  function stopDrawing() {
+    setIsDrawing(false);
+  }
   function clearSignature() {
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext("2d");
-      if (ctx) {
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      }
-    }
+    const canvas = signatureCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  const submitMutation = useMutation({
-    mutationFn: async (absenceData: any) => {
-      if (!user) throw new Error("Benutzer nicht angemeldet");
+  // Multi-Select für Lehrpersonen
+  const lehrerOptions = [
+    "Herr Schmidt",
+    "Frau Müller",
+    "Herr Weber",
+    "Frau Fischer",
+  ];
+  function addTeacher(e: React.ChangeEvent<HTMLSelectElement>) {
+    const value = e.target.value;
+    if (value && !teachersSelected.includes(value)) {
+      setTeachersSelected([...teachersSelected, value]);
+    }
+    e.target.value = "";
+  }
+  function removeTeacher(name: string) {
+    setTeachersSelected(teachersSelected.filter(t => t !== name));
+  }
 
-      console.log("Transformed absence data:", absenceData); // Debug log
-
-      const response = await apiRequest("POST", "/api/absences", absenceData);
-      const result = await response.json();
-      console.log("Server response:", result); // Debug log
-      return result;
-    },
-    onSuccess: () => {
+  async function onSubmit(data: any) {
+    try {
+      // Signatur als boolean (unterschrieben oder nicht)
+      const canvas = signatureCanvasRef.current;
+      let hasSignature = false;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          const pixelBuffer = new Uint32Array(
+            ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer
+          );
+          hasSignature = pixelBuffer.some(color => color !== 0);
+        }
+      }
+      const absenceData = {
+        ...data,
+        studentName: `${data.firstName} ${data.lastName}`.trim(),
+        signature: hasSignature,
+        teachers: teachersSelected,
+        submissionDate: getFormattedDate(new Date()),
+        status: "pending",
+      };
+      await apiRequest("POST", "/api/absences", absenceData);
       toast({
-        title: "Erfolgreich",
-        description: "Entschuldigung wurde erfolgreich eingereicht.",
+        title: "Erfolgreich eingereicht!",
+        description: "Die Entschuldigung wurde erfolgreich gespeichert und wird nun geprüft.",
+        variant: "default",
       });
       form.reset();
-      clearSignature(); // Unterschrift zurücksetzen
-    },
-    onError: (error: Error) => {
+      setTeachersSelected([]);
+      clearSignature();
+    } catch (err: any) {
       toast({
         title: "Fehler",
-        description: `Entschuldigung konnte nicht eingereicht werden: ${error.message}`,
+        description: err?.message || "Abspeichern fehlgeschlagen.",
         variant: "destructive",
       });
-    },
-  });
-
-  function onSubmit(data: FormData) {
-    if (!user) return;
-
-    console.log("Form data before submission:", data);
-
-    const absenceData = {
-      studentId: user.id,
-      studentName: `${data.firstName} ${data.lastName}`,
-      studentClass: data.studentClass,
-      profession: data.profession,
-      phonePrivate: data.phonePrivate || "",
-      phoneWork: data.phoneWork || "",
-      educationType: data.educationType || null,
-      teacherId: 1,
-      teacherName: data.teachers[0],
-      teachers: data.teachers,
-      absenceDate: data.absenceDate,
-      absenceType: "Krankheit",
-      reason: data.reason,
-      dateStart: data.absenceDate,
-      dateEnd: data.absenceDate,
-      lessonCount: data.lessonCount || "0",
-      location: data.location || "",
-      parentSignature: data.parentSignature || false,
-      supervisorSignature: data.supervisorSignature || false,
-      signature: data.signature || "",
-      submissionDate: getFormattedDate(new Date()),
-      status: "pending"
-    };
-
-    console.log("Transformed absence data:", absenceData);
-    submitMutation.mutate(absenceData);
-  }
-
-  if (isLoadingDropdowns || !dropdowns) {
-    return <div>Lade Formulardaten...</div>;
+    }
   }
 
   return (
     <Card className="bg-white shadow-md rounded-lg p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Entschuldigung</h1>
-          <p className="text-sm text-gray-600 mt-2 max-w-2xl">
-            Schulversäumnisse sind innert 8, spätestens jedoch innert 14 Tagen bei den betreffenden
-            Klassenlehrpersonen zu entschuldigen. Diese Entschuldigung ist ohne die erforderlichen
-            Unterschriften ungültig.
-          </p>
-        </div>
+      <h1 className="text-2xl font-bold mb-2">Entschuldigung</h1>
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-gray-700 text-sm max-w-xl">
+          Schulversäumnisse sind innert 8, spätestens jedoch innert 14 Tagen bei den betreffenden Klassenlehrpersonen zu entschuldigen. Diese Entschuldigung ist ohne die erforderlichen Unterschriften ungültig.
+        </p>
         <div className="text-right">
-          <div className="text-4xl font-bold">BBB</div>
-          <div className="text-sm">Berufsfachschule</div>
+          <span className="font-bold text-2xl">BBB</span><br />
+          <span className="text-xs">Berufsfachschule</span>
         </div>
       </div>
-      
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Persönliche Informationen */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 col-span-2">
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nachname" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vorname</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Vorname" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="studentClass"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Klasse</FormLabel>
-                    <FormControl>
-                      <Select 
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-9 px-3 py-1">
-                            <SelectValue placeholder="Klasse auswählen" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {dropdowns.classes.map((item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Persönliche Informationen */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block font-medium mb-1">Name</label>
+            <Input placeholder="Nachname" {...form.register("lastName", { required: true })} />
+            {form.formState.errors.lastName && (<div className="text-red-500 text-sm mt-1">Nachname ist erforderlich</div>)}
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Vorname</label>
+            <Input placeholder="Vorname" {...form.register("firstName", { required: true })} />
+            {form.formState.errors.firstName && (<div className="text-red-500 text-sm mt-1">Vorname ist erforderlich</div>)}
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Klasse</label>
+            <select className="border rounded px-3 py-2 w-full text-base" {...form.register("studentClass", { required: true })}>
+              <option value="">Klasse auswählen</option>
+              <option value="1A">1A</option>
+              <option value="1B">1B</option>
+              <option value="2A">2A</option>
+              <option value="2B">2B</option>
+            </select>
+            {form.formState.errors.studentClass && (<div className="text-red-500 text-sm mt-1">Klasse ist erforderlich</div>)}
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Beruf</label>
+            <select className="border rounded px-3 py-2 w-full text-base" {...form.register("profession", { required: true })}>
+              <option value="">Beruf auswählen</option>
+              <option value="Informatiker/in">Informatiker/in</option>
+              <option value="Kaufmann/-frau">Kaufmann/-frau</option>
+              <option value="Mediamatiker/in">Mediamatiker/in</option>
+            </select>
+            {form.formState.errors.profession && (<div className="text-red-500 text-sm mt-1">Beruf ist erforderlich</div>)}
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Telefon P</label>
+            <Input placeholder="Private Telefonnummer" {...form.register("phonePrivate")} />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Telefon G</label>
+            <Input placeholder="Geschäftliche Telefonnummer" {...form.register("phoneWork")} />
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Schultyp</label>
+            <select className="border rounded px-3 py-2 w-full text-base" {...form.register("educationType")}> 
+              <option value="BS">BS</option>
+              <option value="BM">BM</option>
+            </select>
+          </div>
+        </div>
+        {/* Grund der Abwesenheit */}
+        <div className="border-t border-b border-gray-200 py-4">
+          <label className="block font-medium mb-1">Grund</label>
+          <textarea className="border rounded px-3 py-2 w-full text-base" rows={4} {...form.register("reason", { required: true })} />
+          {form.formState.errors.reason && (<div className="text-red-500 text-sm mt-1">Grund ist erforderlich</div>)}
+        </div>
+        {/* Ort, Datum, Unterschriften */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block font-medium mb-1">Ort</label>
+            <Input placeholder="z.B. Basel" {...form.register("location", { required: true })} />
+            {form.formState.errors.location && (<div className="text-red-500 text-sm mt-1">Ort ist erforderlich</div>)}
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Datum</label>
+            <Input type="date" {...form.register("date", { required: true })} />
+            {form.formState.errors.date && (<div className="text-red-500 text-sm mt-1">Datum ist erforderlich</div>)}
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Unterschriften</label>
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox checked={form.watch("isLegal")} onCheckedChange={v => form.setValue("isLegal", !!v)} id="isLegal" />
+              <label htmlFor="isLegal">mündig</label>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 col-span-2">
-              <FormField
-                control={form.control}
-                name="profession"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Beruf</FormLabel>
-                    <FormControl>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Beruf auswählen" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {dropdowns.professions.map((item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            <div>
+              <label className="block text-xs mb-1">Lernende:r</label>
+              <canvas
+                ref={signatureCanvasRef}
+                width={300}
+                height={80}
+                className="border rounded bg-white w-full h-20 cursor-crosshair"
+                onPointerDown={startDrawing}
+                onPointerMove={draw}
+                onPointerUp={stopDrawing}
+                onPointerLeave={stopDrawing}
               />
-
-              <FormField
-                control={form.control}
-                name="phonePrivate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefon P</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Private Telefonnummer" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="phoneWork"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefon G</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Geschäftliche Telefonnummer" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <Button type="button" variant="outline" className="mt-2" onClick={clearSignature}>Löschen</Button>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <FormField
-                control={form.control}
-                name="educationType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Schultyp</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      defaultValue="BS"
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Schultyp auswählen" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="BS">BS</SelectItem>
-                        <SelectItem value="BM">BM</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="flex items-center gap-2 mt-2">
+              <Checkbox checked={form.watch("parentSignature")} onCheckedChange={v => form.setValue("parentSignature", !!v)} id="parentSignature" />
+              <label htmlFor="parentSignature">Eltern</label>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <Checkbox checked={form.watch("supervisorSignature")} onCheckedChange={v => form.setValue("supervisorSignature", !!v)} id="supervisorSignature" />
+              <label htmlFor="supervisorSignature">Ausbildungsverantwortliche:r</label>
             </div>
           </div>
-          
-          {/* Grund der Abwesenheit */}
-          <div className="border-t border-b border-gray-200 py-4">
-            <FormField
-              control={form.control}
-              name="reason"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Grund</FormLabel>
-                  <FormControl>
-                    <Textarea rows={4} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          {/* Unterschriften */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ort</FormLabel>
-                    <FormControl>
-                      <Input placeholder="z.B. Basel" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Datum</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} value={field.value || ""} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="flex flex-col">
-              <FormLabel className="mb-2">Unterschriften</FormLabel>
-              <div className="grid grid-cols-1 gap-2">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span>Lernende:r</span>
-                    <FormField
-                      control={form.control}
-                      name="isLegal"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <FormLabel>mündig</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  {/* Signature Canvas */}
-                  <FormField
-                    control={form.control}
-                    name="signature"
-                    render={({ field }) => (
-                      <FormItem>
-                        <canvas
-                          ref={canvasRef}
-                          className="border border-gray-300 rounded w-full h-20 touch-none"
-                          onMouseDown={() => setIsDrawing(true)}
-                          onMouseUp={() => {
-                            setIsDrawing(false);
-                            // Save signature as data URL when mouse is released
-                            const canvas = canvasRef.current;
-                            if (canvas) {
-                              const signatureData = canvas.toDataURL();
-                              field.onChange(signatureData);
-                            }
-                          }}
-                          onMouseMove={(e) => {
-                            if (!isDrawing || !canvasRef.current) return;
-                            const canvas = canvasRef.current;
-                            const ctx = canvas.getContext('2d');
-                            if (ctx) {
-                              const rect = canvas.getBoundingClientRect();
-                              const x = e.clientX - rect.left;
-                              const y = e.clientY - rect.top;
-                              ctx.lineWidth = 2;
-                              ctx.lineCap = 'round';
-                              ctx.strokeStyle = '#000';
-                              ctx.lineTo(x, y);
-                              ctx.stroke();
-                              ctx.beginPath();
-                              ctx.moveTo(x, y);
-                            }
-                          }}
-                        ></canvas>
-                        <div className="flex justify-end">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm"
-                            className="mt-1 text-xs"
-                            onClick={() => {
-                              clearSignature();
-                              field.onChange("");
-                            }}
-                          >
-                            Löschen
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="parentSignature"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2">
-                      <span className="flex-grow">Eltern</span>
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="supervisorSignature"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2">
-                      <span className="flex-grow">Ausbildungsverantwortliche:r</span>
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+        </div>
+        {/* Versäumter Unterricht */}
+        <div className="border-t border-gray-200 pt-4">
+          <h2 className="text-lg font-semibold mb-4">Ich habe folgenden Unterricht bei folgenden Lehrpersonen versäumt:</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
+            <div>
+              <label className="block font-medium mb-1">Lehrperson</label>
+              <select className="border rounded px-3 py-2 w-full text-base" onChange={addTeacher} defaultValue="">
+                <option value="">Lehrpersonen auswählen</option>
+                {lehrerOptions.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {teachersSelected.map(name => (
+                  <span key={name} className="bg-gray-100 border rounded px-2 py-1 flex items-center text-sm">
+                    {name}
+                    <button type="button" className="ml-1 text-red-500" onClick={() => removeTeacher(name)}>&times;</button>
+                  </span>
+                ))}
               </div>
             </div>
-          </div>
-          
-          {/* Versäumter Unterricht */}
-          <div className="border-t border-gray-200 pt-4">
-            <h2 className="text-lg font-semibold mb-4">Ich habe folgenden Unterricht bei folgenden Lehrpersonen versäumt:</h2>
-            
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
-              <FormField
-                control={form.control}
-                name="teachers"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lehrperson</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        if (!field.value.includes(value)) {
-                          field.onChange([...field.value, value]);
-                        }
-                      }}
-                      value={field.value[field.value.length - 1] || ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Lehrpersonen auswählen" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {dropdowns.teachers.map((item) => (
-                          <SelectItem key={item} value={item}>
-                            {item}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="absenceDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Datum der Absenz</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="lessonCount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Anzahl Lektionen</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div>
+              <label className="block font-medium mb-1">Datum der Absenz</label>
+              <Input type="date" {...form.register("absenceDate", { required: false })} />
             </div>
-            
-            {/* Ausgewählte Lehrer */}
-            <FormField
-              control={form.control}
-              name="teachers"
-              render={({ field }) => (
-                <div>
-                  {field.value.length > 0 && (
-                    <div className="mb-4">
-                      <div className="text-sm font-medium mb-2">Ausgewählte Lehrpersonen:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {field.value.map((teacher, index) => (
-                          <div 
-                            key={index} 
-                            className="flex items-center space-x-1 bg-gray-100 px-2 py-1 rounded"
-                          >
-                            <span>{teacher}</span>
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const newTeachers = [...field.value];
-                                newTeachers.splice(index, 1);
-                                field.onChange(newTeachers);
-                              }}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            />
+            <div>
+              <label className="block font-medium mb-1">Anzahl Lektionen</label>
+              <Input type="number" min="1" {...form.register("lessonCount", { required: false })} />
+            </div>
           </div>
-          
-          {/* Bestätigung */}
-          <div className="pt-2">
-            <FormField
-              control={form.control}
-              name="confirmTruth"
-              render={({ field }) => (
-                <FormItem className="flex items-start space-x-2 mb-6">
-                  <FormControl>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                      <FormLabel className="mt-0">
-                        Ich bestätige, dass alle Angaben wahrheitsgemäß sind und dass diese Entschuldigung mit den erforderlichen Unterschriften versehen wurde.
-                      </FormLabel>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        </div>
+        {/* Bestätigung */}
+        <div className="pt-2">
+          <div className="flex items-center gap-2">
+            <Checkbox checked={form.watch("confirmTruth")} onCheckedChange={v => form.setValue("confirmTruth", !!v)} id="confirmTruth" />
+            <label htmlFor="confirmTruth">Ich bestätige, dass alle Angaben wahrheitsgemäß sind und dass diese Entschuldigung mit den erforderlichen Unterschriften versehen wurde.</label>
+            {form.formState.errors.confirmTruth && (<div className="text-red-500 text-sm mt-1">Bestätigung ist erforderlich</div>)}
           </div>
-
-          <div className="mt-6 flex justify-end">
-            <Button 
-              type="submit" 
-              disabled={submitMutation.isPending}
-              className="px-6 py-2"
-            >
-              {submitMutation.isPending ? "Wird eingereicht..." : "Entschuldigung einreichen"}
-            </Button>
-          </div>
-        </form>
-      </Form>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Button type="submit" className="px-6 py-2">Entschuldigung einreichen</Button>
+        </div>
+      </form>
     </Card>
   );
 }

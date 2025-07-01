@@ -8,6 +8,7 @@ import {
   FormProvider,
   useFormContext,
   type ControllerProps,
+  type Control,
   type FieldPath,
   type FieldValues,
 } from "react-hook-form"
@@ -28,18 +29,35 @@ const FormFieldContext = React.createContext<FormFieldContextValue>(
   {} as FormFieldContextValue
 )
 
-const FormField = <
-  TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->({
-  ...props
-}: ControllerProps<TFieldValues, TName>) => {
-  return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
-    </FormFieldContext.Provider>
-  )
-}
+const FormField = React.memo(
+  <
+    TFieldValues extends FieldValues = FieldValues,
+    TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  >({
+    control,
+    name,
+    render,
+    ...props
+  }: ControllerProps<TFieldValues, TName> & { control: Control<TFieldValues> | Control<FormData> }) => {
+    return (
+      <FormFieldContext.Provider value={{ name }}>
+        <Controller
+          control={control}
+          name={name}
+          render={({ field, fieldState, formState }) => {
+            // Memoize the render function to prevent unnecessary re-renders
+            const memoizedRender = React.useCallback(
+              () => render({ field, fieldState, formState }),
+              [field, fieldState, formState]
+            )
+            return memoizedRender()
+          }}
+          {...props}
+        />
+      </FormFieldContext.Provider>
+    )
+  }
+)
 
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
@@ -75,14 +93,15 @@ const FormItemContext = React.createContext<FormItemContextValue>(
 const FormItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  const id = React.useId()
+>(({ className, id: customId, ...props }, ref) => {
+  // Erlaube explizite Übergabe einer stabilen id als Prop, sonst fallback auf useId
+  const id = customId || React.useId();
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <div ref={ref} className={cn("space-y-2", className)} {...props} />
+      <div ref={ref} className={cn("space-y-2", className)} id={id} {...props} />
     </FormItemContext.Provider>
-  )
+  );
 })
 FormItem.displayName = "FormItem"
 

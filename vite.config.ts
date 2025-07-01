@@ -12,10 +12,20 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
+<<<<<<< HEAD
         target: 'http://localhost:3000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
+=======
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+        ws: true
+      }
+    }
+  }
+>>>>>>> fb100b4 (Mein finaler Stand)
 });

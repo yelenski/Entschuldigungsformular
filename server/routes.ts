@@ -69,7 +69,6 @@ export class MemStorage {
 
     const newAbsence: Absence = {
       id,
-      studentId: absence.studentId,
       studentName: absence.studentName,
       studentClass: absence.studentClass,
       profession: absence.profession,
@@ -121,11 +120,16 @@ function requireRole(role: string) {
 const apiRouter = Router();
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Mount the API router first
+  app.use("/api", apiRouter);
 
   // Auth routes
   apiRouter.post("/auth/login", async (req: Request, res: Response) => {
     try {
+      console.log('Login attempt received:', req.body);
+      
       const { username, password, role } = loginSchema.parse(req.body);
+      console.log('Login data validated:', { username, role });
       
       // Demo-Modus: Akzeptiere alle Anmeldedaten
       const user = {
@@ -138,6 +142,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Speichere Benutzer in der Session
       req.session.user = user;
       
+      // Log the session data for debugging
+      console.log('Session after setting user:', {
+        sessionID: req.sessionID,
+        session: req.session,
+        user: req.session.user
+      });
+      
       // Warte auf das Session-Speichern
       await new Promise<void>((resolve, reject) => {
         req.session.save((err) => {
@@ -145,6 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.error("Session save error:", err);
             reject(err);
           } else {
+            console.log('Session saved successfully');
             resolve();
           }
         });
@@ -184,9 +196,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     res.json(req.session.user);
   });
-
-  // Mount the API router
-  app.use("/api", apiRouter);
 
   // Absence routes
   app.post("/api/absences", async (req: Request, res: Response) => {

@@ -19,7 +19,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const absences = pgTable("absences", {
   id: serial("id").primaryKey(),
-  studentId: integer("student_id").notNull(),
   studentName: text("student_name").notNull(),
   studentClass: text("student_class").notNull(),
   profession: text("profession").notNull(),
@@ -27,8 +26,6 @@ export const absences = pgTable("absences", {
   phoneWork: text("phone_work"),
   educationType: text("education_type", { enum: ["BS", "BM"] }).notNull(),
   signature: text("signature"),
-  teacherId: integer("teacher_id").notNull(),
-  teacherName: text("teacher_name").notNull(),
   teachers: text("teachers").notNull(), // Array als JSON-String
   absenceType: text("absence_type").notNull(),
   dateStart: text("date_start").notNull(),
@@ -44,22 +41,19 @@ export const absences = pgTable("absences", {
 });
 
 export const insertAbsenceSchema = z.object({
-  studentId: z.number(),
   studentName: z.string().min(1, "Name ist erforderlich"),
   studentClass: z.string().min(1, "Klasse ist erforderlich"),
   profession: z.string().min(1, "Beruf ist erforderlich"),
   phonePrivate: z.string().optional().nullable(),
   phoneWork: z.string().optional().nullable(),
   educationType: z.enum(["BS", "BM"]).optional().nullable(),
-  signature: z.string().optional().nullable(),
-  teacherId: z.number(),
-  teacherName: z.string().min(1, "Lehrer ist erforderlich"),
+  signature: z.boolean().default(false),
   teachers: z.array(z.string()).min(1, "Mindestens ein Lehrer muss ausgewählt werden"),
   absenceDate: z.string().min(1, "Datum ist erforderlich"),
   absenceType: z.string().default("Krankheit"),
   reason: z.string().min(1, "Grund ist erforderlich"),
-  dateStart: z.string(),
-  dateEnd: z.string(),
+  dateStart: z.string().optional(),
+  dateEnd: z.string().optional(),
   lessonCount: z.string().min(1, "Anzahl der Lektionen ist erforderlich"),
   location: z.string().min(1, "Ort ist erforderlich"),
   parentSignature: z.boolean().default(false),
@@ -71,16 +65,13 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export interface Absence {
   id: number;
-  studentId: number;
   studentName: string;
   studentClass: string;
   profession: string;
   phonePrivate: string | null;
   phoneWork: string | null;
   educationType: "BS" | "BM" | null;
-  signature: string | null;
-  teacherId: number;
-  teacherName: string;
+  signature: boolean;
   teachers: string; // JSON string of teacher array
   absenceType: string;
   dateStart: string;

@@ -98,6 +98,7 @@ export function ContextMenu({
     return null;
   }
 
+<<<<<<< HEAD:src/components/ContextMenu.tsx
   // Neue Status-Auswahl für alle Entschuldigungen
   const statusOptions = [
     { value: "Aussenstehend", backendValue: "pending", label: "Aussenstehend", icon: <Clock className="h-4 w-4 mr-2" />, className: "bg-yellow-100 text-yellow-800" },
@@ -107,6 +108,30 @@ export function ContextMenu({
     { value: "Abgelehnt", backendValue: "rejected", label: "Ablehnen", icon: <XCircle className="h-4 w-4 mr-2" />, className: "bg-red-100 text-error" },
     { value: "Abgelaufen", backendValue: "expired", label: "Als abgelaufen markieren", icon: <TimerOff className="h-4 w-4 mr-2" />, className: "bg-gray-100 text-gray-800" },
   ];
+=======
+  // Hilfsfunktion: Status-Optionen je nach aktuellem Status
+  function getStatusOptions(currentStatus: string) {
+    const allStatuses = [
+      { key: "approved", label: "Genehmigen", icon: <CheckCircle className="h-4 w-4 mr-2" /> },
+      { key: "rejected", label: "Ablehnen", icon: <XCircle className="h-4 w-4 mr-2" /> },
+      { key: "awaiting_docs", label: "Dokumente anfordern", icon: <FileQuestion className="h-4 w-4 mr-2" /> },
+      { key: "under_review", label: "Zur Prüfung", icon: <AlarmClock className="h-4 w-4 mr-2" /> },
+      { key: "expired", label: "Als abgelaufen markieren", icon: <TimerOff className="h-4 w-4 mr-2" /> },
+    ];
+    if (currentStatus === "pending") {
+      // Alle außer "pending"
+      return allStatuses;
+    }
+    if (currentStatus === "under_review" || currentStatus === "awaiting_docs") {
+      // Nur bestimmte Status
+      return allStatuses.filter(s => ["approved", "rejected", "expired"].includes(s.key));
+    }
+    // Für abgeschlossene Status keine Status-Optionen
+    return [];
+  }
+
+  const statusOptions = getStatusOptions(absence.status);
+>>>>>>> fb100b4 (Mein finaler Stand):client/src/components/ContextMenu.tsx
 
   const menuStyle = {
     top: `${position.y}px`,
@@ -129,6 +154,7 @@ export function ContextMenu({
             Details anzeigen
           </button>
         </li>
+<<<<<<< HEAD:src/components/ContextMenu.tsx
         
         <>
           <li className="py-1 px-2 text-xs font-semibold text-gray-500 bg-gray-50">
@@ -150,6 +176,33 @@ export function ContextMenu({
             </li>
           ))}
         </>
+=======
+        {statusOptions.length > 0 && (
+          <>
+            <li className="py-1 px-2 text-xs font-semibold text-gray-500 bg-gray-50">
+              Status ändern
+            </li>
+            {statusOptions.map(option => (
+              <li key={option.key}>
+                <button
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-light focus:outline-none flex items-center ${
+                    option.key === "approved" ? "text-green-700" :
+                    option.key === "rejected" ? "text-red-700" :
+                    option.key === "awaiting_docs" ? "text-blue-700" :
+                    option.key === "under_review" ? "text-purple-700" :
+                    option.key === "expired" ? "text-gray-700" : ""
+                  }`}
+                  onClick={() => updateStatusMutation.mutate(option.key)}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  {option.icon}
+                  {option.label}
+                </button>
+              </li>
+            ))}
+          </>
+        )}
+>>>>>>> fb100b4 (Mein finaler Stand):client/src/components/ContextMenu.tsx
       </ul>
     </div>
   );

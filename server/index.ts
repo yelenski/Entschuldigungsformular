@@ -14,6 +14,7 @@ import path from "path";
 
 const MemoryStoreSession = MemoryStore(session);
 
+<<<<<<< HEAD
 // CORS-Konfiguration für Zugriff von Netlify
 const allowedOrigins = [
   "https://entschuldigungsformular.netlify.app"
@@ -23,6 +24,30 @@ app.use(
   cors({
     origin: allowedOrigins,
     credentials: true,
+=======
+// Configure CORS before any other middleware
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? 'http://localhost:3000' : true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+
+// Configure session middleware with secure settings
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'supersecret',
+  resave: false,
+  saveUninitialized: false,
+  name: 'sid',
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+  },
+  store: new MemoryStoreSession({
+    checkPeriod: 86400000
+>>>>>>> fb100b4 (Mein finaler Stand)
   })
 );
 
@@ -49,6 +74,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+<<<<<<< HEAD
 // Routen
 app.use("/api/auth", loginRouter);
 
@@ -69,6 +95,9 @@ app.get("/api/absences", async (req, res) => {
 });
 
 // Session-Debug-Logging
+=======
+// Session debug middleware
+>>>>>>> fb100b4 (Mein finaler Stand)
 app.use((req, res, next) => {
   if (req.path.startsWith("/api")) {
     console.log("Session Debug:", {
@@ -129,6 +158,7 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
+<<<<<<< HEAD
   // Server starten
   const port = 3000;
   server.listen({
@@ -137,5 +167,10 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+=======
+  const port = Number(process.env.PORT) || 4000;
+  server.listen(port, "0.0.0.0", () => {
+    log(`Server is running on port ${port}`);
+>>>>>>> fb100b4 (Mein finaler Stand)
   });
 })();

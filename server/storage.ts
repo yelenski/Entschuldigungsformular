@@ -146,22 +146,18 @@ export class MemStorage implements IStorage {
 
     // Handle teachers array
     const teachers = Array.isArray(absence.teachers) ? absence.teachers : [];
-    const teacherName = teachers.length > 0 ? teachers[0] : "Nicht angegeben";
 
     const newAbsence: Absence = {
       id,
-      studentId: absence.studentId,
       studentName: absence.studentName,
       studentClass: absence.studentClass,
       profession: absence.profession,
       phonePrivate: absence.phonePrivate || null,
       phoneWork: absence.phoneWork || null,
       educationType: absence.educationType || null,
-      signature: absence.signature || null,
-      teacherId: absence.teacherId,
-      teacherName: teacherName,
+      signature: Boolean(absence.signature),
       teachers: JSON.stringify(teachers),
-      absenceType: "Krankheit",
+      absenceType: absence.absenceType || "Krankheit",
       dateStart: absence.absenceDate,
       dateEnd: absence.absenceDate,
       reason: absence.reason,

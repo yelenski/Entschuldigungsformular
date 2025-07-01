@@ -13,3 +13,12 @@ export function getFormattedDate(date: Date): string {
     year: 'numeric'
   });
 }
+
+export function createUncontrolledFormField(field: any) {
+  return {
+    name: field.name,
+    onBlur: field.onBlur,
+    onChange: (e: any) => field.onChange(e?.target?.value ?? e),
+    ref: field.ref
+  };
+}

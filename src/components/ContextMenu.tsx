@@ -98,17 +98,6 @@ export function ContextMenu({
     return null;
   }
 
-<<<<<<< HEAD:src/components/ContextMenu.tsx
-  // Neue Status-Auswahl für alle Entschuldigungen
-  const statusOptions = [
-    { value: "Aussenstehend", backendValue: "pending", label: "Aussenstehend", icon: <Clock className="h-4 w-4 mr-2" />, className: "bg-yellow-100 text-yellow-800" },
-    { value: "Dokument Anfordern", backendValue: "awaiting_docs", label: "Dokument anfordern", icon: <FileQuestion className="h-4 w-4 mr-2" />, className: "bg-blue-100 text-blue-800" },
-    { value: "In Prüfung", backendValue: "under_review", label: "In Prüfung", icon: <AlarmClock className="h-4 w-4 mr-2" />, className: "bg-purple-100 text-purple-800" },
-    { value: "Genehmigt", backendValue: "approved", label: "Genehmigen", icon: <CheckCircle className="h-4 w-4 mr-2" />, className: "bg-green-100 text-success" },
-    { value: "Abgelehnt", backendValue: "rejected", label: "Ablehnen", icon: <XCircle className="h-4 w-4 mr-2" />, className: "bg-red-100 text-error" },
-    { value: "Abgelaufen", backendValue: "expired", label: "Als abgelaufen markieren", icon: <TimerOff className="h-4 w-4 mr-2" />, className: "bg-gray-100 text-gray-800" },
-  ];
-=======
   // Hilfsfunktion: Status-Optionen je nach aktuellem Status
   function getStatusOptions(currentStatus: string) {
     const allStatuses = [
@@ -131,7 +120,6 @@ export function ContextMenu({
   }
 
   const statusOptions = getStatusOptions(absence.status);
->>>>>>> fb100b4 (Mein finaler Stand):client/src/components/ContextMenu.tsx
 
   const menuStyle = {
     top: `${position.y}px`,
@@ -154,29 +142,6 @@ export function ContextMenu({
             Details anzeigen
           </button>
         </li>
-<<<<<<< HEAD:src/components/ContextMenu.tsx
-        
-        <>
-          <li className="py-1 px-2 text-xs font-semibold text-gray-500 bg-gray-50">
-            Status ändern
-          </li>
-          {statusOptions.map(option => (
-            <li key={option.value}>
-              <button
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-light focus:outline-none flex items-center rounded ${option.className} ${absence.status === option.backendValue ? 'font-bold ring-2 ring-primary/40' : ''}`}
-                onClick={() => {
-                  console.log('Status-Button geklickt:', option.backendValue, absence);
-                  updateStatusMutation.mutate(option.backendValue);
-                }}
-                disabled={updateStatusMutation.isPending || absence.status === option.backendValue}
-              >
-                {option.icon}
-                {option.label}
-              </button>
-            </li>
-          ))}
-        </>
-=======
         {statusOptions.length > 0 && (
           <>
             <li className="py-1 px-2 text-xs font-semibold text-gray-500 bg-gray-50">
@@ -202,7 +167,6 @@ export function ContextMenu({
             ))}
           </>
         )}
->>>>>>> fb100b4 (Mein finaler Stand):client/src/components/ContextMenu.tsx
       </ul>
     </div>
   );

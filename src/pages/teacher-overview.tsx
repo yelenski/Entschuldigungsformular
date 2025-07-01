@@ -30,7 +30,6 @@ export default function TeacherOverview() {
     cacheTime: 0,
   });
 
-<<<<<<< HEAD:src/pages/teacher-overview.tsx
   // Mapping Backend-Status zu deutschen Status
   function mapStatusToGerman(status: string) {
     switch (status) {
@@ -52,14 +51,6 @@ export default function TeacherOverview() {
     absence.status === 'Dokument Anfordern' || absence.status === 'In Prüfung');
   const exklusiveAbgeschlossen = mappedAbsences.filter(absence =>
     absence.status === 'Genehmigt' || absence.status === 'Abgelehnt' || absence.status === 'Abgelaufen');
-=======
-  // Neue Filterlogik entsprechend der Vorgabe
-  const offeneAbsences = allAbsences?.filter(absence => absence.status === 'pending') ?? [];
-  const inBearbeitungAbsences = allAbsences?.filter(absence =>
-    absence.status === 'under_review' || absence.status === 'awaiting_docs') ?? [];
-  const abgeschlossenAbsences = allAbsences?.filter(absence =>
-    absence.status === 'approved' || absence.status === 'rejected' || absence.status === 'expired') ?? [];
->>>>>>> fb100b4 (Mein finaler Stand):client/src/pages/teacher-overview.tsx
 
   useEffect(() => {
     // Redirect if not authenticated or not a teacher
@@ -128,7 +119,6 @@ export default function TeacherOverview() {
                 className="w-full"
               >
                 <TabsList className="border-b w-full justify-start rounded-none">
-<<<<<<< HEAD:src/pages/teacher-overview.tsx
                   <TabsTrigger value="offen" className="px-6 py-3">
                     Offen
                   </TabsTrigger>
@@ -136,60 +126,33 @@ export default function TeacherOverview() {
                     In Bearbeitung
                   </TabsTrigger>
                   <TabsTrigger value="abgeschlossen" className="px-6 py-3">
-=======
-                  <TabsTrigger value="pending" className="px-6 py-3">
-                    Offen
-                  </TabsTrigger>
-                  <TabsTrigger value="inprogress" className="px-6 py-3">
-                    In Bearbeitung
-                  </TabsTrigger>
-                  <TabsTrigger value="done" className="px-6 py-3">
->>>>>>> fb100b4 (Mein finaler Stand):client/src/pages/teacher-overview.tsx
                     Abgeschlossen
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="offen">
                   <AbsenceTable 
-<<<<<<< HEAD:src/pages/teacher-overview.tsx
                     absences={exklusiveOffene}
-=======
-                    absences={offeneAbsences}
->>>>>>> fb100b4 (Mein finaler Stand):client/src/pages/teacher-overview.tsx
                     isLoading={isLoading}
                     onAbsenceClick={handleAbsenceClick}
                     onContextMenu={handleContextMenu}
                     type="pending"
                   />
                 </TabsContent>
-<<<<<<< HEAD:src/pages/teacher-overview.tsx
 
                 <TabsContent value="bearbeitung">
                   <AbsenceTable 
                     absences={exklusiveInBearbeitung}
-=======
-                
-                <TabsContent value="inprogress">
-                  <AbsenceTable 
-                    absences={inBearbeitungAbsences}
->>>>>>> fb100b4 (Mein finaler Stand):client/src/pages/teacher-overview.tsx
                     isLoading={isLoading}
                     onAbsenceClick={handleAbsenceClick}
                     onContextMenu={handleContextMenu}
                     type="pending"
                   />
                 </TabsContent>
-<<<<<<< HEAD:src/pages/teacher-overview.tsx
-
+                
                 <TabsContent value="abgeschlossen">
                   <AbsenceTable 
                     absences={exklusiveAbgeschlossen}
-=======
-                
-                <TabsContent value="done">
-                  <AbsenceTable 
-                    absences={abgeschlossenAbsences}
->>>>>>> fb100b4 (Mein finaler Stand):client/src/pages/teacher-overview.tsx
                     isLoading={isLoading}
                     onAbsenceClick={handleAbsenceClick}
                     onContextMenu={handleContextMenu}
